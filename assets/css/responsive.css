@@ -1,0 +1,244 @@
+/* Mobile-first responsive utilities and overrides for Study Buddy */
+
+:root{
+  --max-width: 1180px;
+  --gap: 1rem;
+  --brand-1: #667eea;
+  --brand-2: #764ba2;
+  --accent: #10b981;
+  --danger: #ef4444;
+  --text: #1f2937;
+  --muted: #6b7280;
+}
+
+/* Global reset / base */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  line-height:1.45;
+  color:var(--text);
+  margin:0;
+  -webkit-font-smoothing:antialiased;
+  -moz-osx-font-smoothing:grayscale;
+}
+
+/* Container */
+.container{
+  width:100%;
+  padding:0 1rem;
+  margin:0 auto;
+  max-width:var(--max-width);
+}
+
+/* Images and media */
+img,video,iframe{max-width:100%;height:auto;display:block}
+
+/* Navbar: mobile-first collapsed */
+#navbar{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--gap);
+  padding:.75rem 1rem;
+  background:rgba(0,0,0,0.28);
+  backdrop-filter: blur(6px);
+  position:sticky;
+  top:0;
+  z-index:40;
+}
+
+/* Logo */
+.logo{display:flex;align-items:center;gap:.5rem;font-weight:700;color:white;text-decoration:none}
+
+/* Nav links: collapsed on small screens */
+.nav-links{
+  display:none; /* hidden on mobile */
+  align-items:center;
+  gap:.5rem;
+}
+
+/* hamburger */
+.nav-toggle{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:40px;
+  height:40px;
+  background:transparent;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,0.08);
+  color:white;
+  cursor:pointer;
+}
+
+/* When .nav-open is toggled on body, show nav */
+body.nav-open .nav-links{
+  display:flex;
+  position:fixed;
+  right:0;
+  top:64px;
+  flex-direction:column;
+  background:linear-gradient(180deg, rgba(0,0,0,0.7), rgba(0,0,0,0.85));
+  padding:1rem;
+  gap:.5rem;
+  border-radius:8px;
+  min-width:200px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.5);
+}
+
+/* Mobile Navigation Styles */
+.nav-toggle {
+    display: none;
+    background: transparent;
+    border: none;
+    color: white;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    z-index: 100;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+@media screen and (max-width: 768px) {
+    .nav-toggle {
+        display: block;
+    }
+
+    .nav-links {
+        display: none;
+        position: fixed;
+        top: 70px;
+        left: 0;
+        right: 0;
+        background: rgba(0, 0, 0, 0.95);
+        padding: 2rem;
+        flex-direction: column;
+        align-items: stretch;
+        transition: all 0.3s ease;
+    }
+
+    .nav-links.show {
+        display: flex;
+    }
+
+    .nav-links a {
+        width: 100%;
+        text-align: center;
+        padding: 1rem;
+        border-radius: 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .nav-links a:last-child {
+        border-bottom: none;
+    }
+}
+
+/* CTA styles */
+.cta-button{
+  display:inline-block;
+  padding:.6rem 1rem;
+  border-radius:8px;
+  text-decoration:none;
+  font-weight:600;
+  color:white;
+  background:linear-gradient(45deg, var(--accent), #059669);
+  border:0;
+}
+
+/* Dashboard layout */
+.dashboard-container{padding:1.5rem}
+.dashboard-card{
+  background:rgba(255,255,255,0.98);
+  border-radius:16px;
+  padding:1.25rem;
+  box-shadow:0 14px 40px rgba(0,0,0,0.12);
+  width:100%;
+  margin:0 auto;
+}
+
+/* Grid for cards (responsive) */
+.dashboard-links-grid{
+  display:grid;
+  grid-template-columns:repeat(1,1fr);
+  gap:1rem;
+  margin-top:1rem;
+}
+
+/* Link items */
+.dashboard-link-item{
+  display:flex;
+  align-items:center;
+  gap:1rem;
+  padding:.9rem;
+  border-radius:12px;
+  color:white;
+  text-decoration:none;
+  background:linear-gradient(45deg,var(--brand-1),var(--brand-2));
+}
+
+/* Logout */
+.logout-button{display:inline-block;padding:.8rem 1rem;border-radius:10px;background:linear-gradient(45deg,var(--danger),#dc2626);color:white;text-decoration:none}
+
+/* Footer spacing */
+.footer{padding:1rem;background:rgba(0,0,0,0.18);color:white;text-align:center;margin-top:1.5rem}
+
+/* Larger breakpoints */
+@media (min-width:640px){
+  .dashboard-links-grid{grid-template-columns:repeat(2,1fr)}
+  body.nav-open .nav-links{position:static;flex-direction:row;background:transparent;box-shadow:none;min-width:initial;padding:0}
+  .nav-toggle{display:none}
+  .nav-links{display:flex}
+}
+
+@media (min-width:1024px){
+  .dashboard-links-grid{grid-template-columns:repeat(3,1fr)}
+  .container{padding:0 1.5rem}
+  .dashboard-card{padding:2rem}
+}
+
+/* Utility helpers */
+.text-center{text-align:center}
+.mt-1{margin-top:.5rem}
+.mt-2{margin-top:1rem}
+.p-1{padding:1rem}
+
+/* Progress Bar Container */
+.progress-container {
+    background-color: #e5e7eb; 
+    border-radius: 9999px;
+    overflow: hidden;
+    height: 20px;
+    margin: 8px 0;
+    width: 100%;
+    position: relative;
+}
+
+/* Progress Bar Fill */
+.progress-bar {
+    background: linear-gradient(90deg, #60a5fa, #3b82f6);
+    height: 100%;
+    border-radius: 9999px;
+    text-align: center;
+    color: white;
+    font-size: 0.8rem;
+    font-weight: bold;
+    line-height: 20px;
+    transition: width 0.4s ease-in-out;
+}
+
+/* Progress Text */
+.progress-text {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
