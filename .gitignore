@@ -1,0 +1,7 @@
+# Log files
+*.log
+/assets/cards
+/assets/images
+/picture
+/uploads
+/Start worker

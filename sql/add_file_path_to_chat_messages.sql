@@ -1,0 +1,1 @@
+ALTER TABLE `chat_messages` ADD `file_path` VARCHAR(255) NULL DEFAULT NULL AFTER `message`;

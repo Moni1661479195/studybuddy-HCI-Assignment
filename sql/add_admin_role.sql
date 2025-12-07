@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `is_admin` TINYINT(1) NOT NULL DEFAULT 0 COMMENT '0 = regular user, 1 = admin';

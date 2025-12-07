@@ -1,0 +1,3 @@
+ALTER TABLE `notifications`
+ADD COLUMN `type` VARCHAR(255) NOT NULL AFTER `message`,
+ADD COLUMN `link` VARCHAR(255) NOT NULL AFTER `type`;
