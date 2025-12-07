@@ -180,7 +180,7 @@ body.nav-open .nav-links{
   border-radius:12px;
   color:white;
   text-decoration:none;
-  background:linear-gradient(45deg,var(--brand-1),var(--brand-2));
+  background:white;
 }
 
 /* Logout */

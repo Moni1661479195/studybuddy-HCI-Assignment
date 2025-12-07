@@ -45,6 +45,7 @@ $stmt = $db->prepare("
     AND u.id NOT IN (SELECT receiver_id FROM study_group_invitations WHERE group_id = :group_id_2 AND status = 'pending')
     -- Filter by search term
     AND CONCAT(u.first_name, ' ', u.last_name) LIKE :search_term
+    AND u.is_admin = 0
     LIMIT 5
 ");
 

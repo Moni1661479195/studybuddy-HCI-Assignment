@@ -1,6 +1,7 @@
 <?php
 require_once '../session.php';
 require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../includes/notifications.php';
 
 header('Content-Type: application/json');
 
@@ -33,6 +34,18 @@ if ($current_user_id === $user_to_invite) {
 try {
     $db = get_db();
 
+    // Get group name for the notification message
+    $stmt_group_name = $db->prepare("SELECT name FROM study_groups WHERE id = ?");
+    $stmt_group_name->execute([$group_id]);
+    $group_result = $stmt_group_name->get_result();
+    if ($group_result->num_rows === 0) {
+        $_SESSION['error'] = "The specified group does not exist.";
+        header("Location: " . $redirect_url);
+        exit();
+    }
+    $group_name = $group_result->fetch_assoc()['name'];
+
+
     // 3. Security Check: Verify the inviting user is a member of the group
     $stmt_check_membership = $db->prepare("SELECT 1 FROM study_group_members WHERE group_id = ? AND user_id = ?");
     $stmt_check_membership->execute([$group_id, $current_user_id]);
@@ -62,10 +75,19 @@ try {
 
     // 6. Create the invitation
     $stmt_invite = $db->prepare("
-        INSERT INTO study_group_invitations (group_id, sender_id, receiver_id, status, invited_at)
-        VALUES (?, ?, ?, 'pending', NOW())
+        INSERT INTO study_group_invitations (group_id, sender_id, receiver_id, status)
+        VALUES (?, ?, ?, 'pending')
     ");
     $stmt_invite->execute([$group_id, $current_user_id, $user_to_invite]);
+
+    // Create a notification for the recipient
+    $inviter_username = $_SESSION['username'] ?? 'A user';
+    $notification_message = 'You have been invited to join the group "' . htmlspecialchars($group_name) . '" by ' . htmlspecialchars($inviter_username);
+    create_notification($user_to_invite, 'group_invitation', $notification_message, 'my-groups.php');
+
+    // Task: Social Butterfly
+    require_once __DIR__ . '/../includes/TaskLogic.php';
+    updateTaskProgress($db, $current_user_id, 'weekly_social');
 
     $_SESSION['success'] = "Invitation sent successfully!";
     header("Location: " . $redirect_url);

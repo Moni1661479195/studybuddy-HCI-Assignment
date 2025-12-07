@@ -12,7 +12,7 @@ function get_user_profile(PDO $db, int $uid): array {
     
     // Single query with JOIN to get all data at once
     $stmt = $db->prepare("
-        SELECT u.skill_level, u.timezone, u.last_active, u.is_online, u.last_seen,
+        SELECT u.skill_level, u.timezone, u.last_active, u.is_online, u.last_seen, u.gender, u.subject_id,
                GROUP_CONCAT(CONCAT(i.name,':', ui.weight)) as interests,
                COALESCE(ss.streak, 0) as streak
         FROM users u
@@ -36,6 +36,8 @@ function get_user_profile(PDO $db, int $uid): array {
         $p['streak'] = (int)$r['streak'];
         $p['is_online'] = (int)$r['is_online'];
         $p['last_seen'] = $r['last_seen'] ?? null;
+        $p['gender'] = $r['gender'] ?? null;
+        $p['subject_id'] = $r['subject_id'] ?? null;
         
         if ($r['interests']) {
             foreach (explode(',', $r['interests']) as $interest_pair) {

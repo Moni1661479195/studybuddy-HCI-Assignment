@@ -1,0 +1,254 @@
+/* Base styles for the AI Bot widget */
+.aibot-widget-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 10000; /* Ensure it's above other content */
+    font-family: 'Inter', sans-serif;
+}
+
+/* Toggle Button (Robot Icon) */
+.aibot-toggle-button {
+    background-color: #1e40af; /* Main site blue */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease;
+}
+
+.aibot-toggle-button:hover {
+    background-color: #1c3b9f; /* Slightly darker blue on hover */
+    transform: scale(1.05);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* Chat Window */
+.aibot-chat-window {
+    background: #ffffff;
+    border-radius: 15px;
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+    width: 350px; /* Slightly smaller than main chat modal */
+    height: 450px;
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    bottom: 0; /* Aligned with the toggle button */
+    right: 0; /* Aligned with the toggle button */
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px) scale(0.95);
+    transition: opacity 0.3s ease, visibility 0.3s ease, transform 0.3s ease;
+    transform-origin: bottom right; /* Animation origin */
+}
+
+.aibot-chat-window.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(-80px) scale(1); /* Move up and scale to show */
+}
+
+.aibot-chat-window.hidden {
+    display: none; /* Ensure it doesn't take up space when hidden */
+}
+
+/* Chat Header */
+.aibot-chat-header {
+    background-color: #1e40af; /* Main site blue */
+    color: white;
+    padding: 10px 15px;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.aibot-chat-header h3 {
+    margin: 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.aibot-close-button {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.aibot-close-button:hover {
+    color: #ffdddd;
+}
+
+/* Messages Area */
+.aibot-messages {
+    flex-grow: 1;
+    padding: 15px;
+    overflow-y: auto;
+    background-color: #f9f9f9;
+    border-bottom: 1px solid #eee;
+}
+
+.aibot-message {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 10px;
+}
+
+.aibot-message.user-message {
+    justify-content: flex-end;
+}
+
+.aibot-message.bot-message .aibot-avatar {
+    margin-right: 10px;
+    background-color: #e0e0e0;
+    color: #555;
+}
+
+.aibot-message.user-message .aibot-avatar {
+    margin-left: 10px;
+    background-color: #667eea;
+    color: white;
+}
+
+.aibot-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+}
+
+.aibot-message-bubble {
+    padding: 8px 12px;
+    border-radius: 15px;
+    max-width: 75%;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+/* Bot message animation */
+@keyframes botMessageFadeIn {
+    from {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.aibot-message.bot-message .aibot-message-bubble {
+    background-color: #e0e0e0;
+    color: #333;
+    border-bottom-left-radius: 5px;
+    animation: botMessageFadeIn 0.4s ease-out;
+}
+
+.aibot-message.user-message .aibot-message-bubble {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    border-bottom-right-radius: 5px;
+}
+
+/* Input Area */
+.aibot-chat-input {
+    display: flex;
+    padding: 10px 15px;
+    border-top: 1px solid #eee;
+    background-color: #ffffff;
+    border-bottom-left-radius: 15px;
+    border-bottom-right-radius: 15px;
+}
+
+#aibot-user-input {
+    flex-grow: 1;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    padding: 8px 15px;
+    font-size: 14px;
+    margin-right: 10px;
+    outline: none;
+    transition: border-color 0.2s ease;
+}
+
+#aibot-user-input:focus {
+    border-color: #1e40af; /* Main site blue */
+}
+
+#aibot-send-button {
+    background-color: #1e40af; /* Main site blue */
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+#aibot-send-button:hover {
+    background-color: #1c3b9f; /* Slightly darker blue on hover */
+    transform: scale(1.1);
+}
+
+/* Loading indicator */
+.aibot-loading-indicator {
+    display: flex;
+    align-items: center;
+    margin-top: 10px;
+    font-size: 14px;
+    color: #666;
+}
+
+.aibot-loading-indicator i {
+    margin-right: 5px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Feature buttons for guest mode */
+.aibot-feature-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 10px;
+}
+
+.aibot-feature-button {
+    background-color: #e0e7ff; /* Light blue background */
+    color: #4f46e5; /* Darker blue text */
+    border: 1px solid #a7b4f8;
+    border-radius: 20px;
+    padding: 8px 12px;
+    font-size: 13px;
+    cursor: pointer;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.aibot-feature-button:hover {
+    background-color: #c7d2fe;
+    transform: translateY(-1px);
+}

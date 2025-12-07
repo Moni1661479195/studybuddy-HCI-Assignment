@@ -21,14 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
             
             // 安全检查：确保当前用户是这个会话的参与者之一
             $check_stmt = $db->prepare("
-                SELECT id 
+                SELECT id, started_at
                 FROM study_sessions 
                 WHERE id = ? 
                   AND (user_id = ? OR JSON_CONTAINS(metadata, CAST(? AS CHAR), '$.group'))
             ");
             $check_stmt->execute([$session_id, $current_user_id, $current_user_id]);
             
-            if ($check_stmt->fetch()) {
+            $session = $check_stmt->fetch(PDO::FETCH_ASSOC);
+
+            if ($session) {
                 // 验证通过，更新会话状态
                 $update_stmt = $db->prepare("
                     UPDATE study_sessions 
@@ -36,6 +38,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
                     WHERE id = ? AND status = 'active'
                 ");
                 $update_stmt->execute([$session_id]);
+
+                // Task Logic
+                require_once __DIR__ . '/../includes/TaskLogic.php';
+                
+                $startTime = strtotime($session['started_at']);
+                $endTime = time();
+                $durationMinutes = round(($endTime - $startTime) / 60);
+
+                if ($durationMinutes > 0) {
+                    // Task: Study Marathon (Weekly) - Accumulate minutes
+                    updateTaskProgress($db, $current_user_id, 'weekly_study_time', $durationMinutes);
+
+                    // Task: Focused Study (Daily) - 1 count if duration > 20 mins
+                    if ($durationMinutes >= 20) {
+                        updateTaskProgress($db, $current_user_id, 'daily_focus');
+                    }
+                }
             }
             
         } catch (Exception $e) {

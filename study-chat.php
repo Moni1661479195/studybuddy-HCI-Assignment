@@ -263,18 +263,23 @@ if (!isset($_SESSION['user_id'])) {
             border-color: #667eea;
         }
 
-        .send-button {
-            width: 48px;
-            height: 48px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
+        .send-button, #upload-button, #record-button {
+            width: 56px;
+            height: 56px;
             border: none;
             border-radius: 50%;
             color: white;
             cursor: pointer;
             transition: all 0.3s ease;
+            font-size: 1.4rem;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .send-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
         }
 
         .send-button:hover {
@@ -287,6 +292,18 @@ if (!isset($_SESSION['user_id'])) {
             cursor: not-allowed;
             transform: scale(1);
         }
+
+        #upload-button, #record-button {
+            background: #f0f0f0;
+            color: #333;
+        }
+
+        .recording-wrapper { display: flex; align-items: center; justify-content: space-between; width: 100%; }
+        .recording-status { display: flex; align-items: center; gap: 0.5rem; color: #d9534f; font-weight: 600; }
+        #cancel-record-button, #send-record-button { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #4b5563; transition: color 0.3s; }
+        #cancel-record-button:hover { color: #d9534f; }
+        #send-record-button { color: #28a745; }
+        #send-record-button:hover { color: #218838; }
 
         /* Typing indicator */
         .typing-indicator {
@@ -387,7 +404,10 @@ if (!isset($_SESSION['user_id'])) {
 
             <!-- Message Input -->
             <div class="message-input-container">
-                <div class="message-input-wrapper">
+                <div class="message-input-wrapper" id="input-wrapper">
+                    <input type="file" id="file-input" style="display: none;" />
+                    <button id="upload-button" title="Upload File" class="send-button"><i class="fas fa-paperclip"></i></button>
+                    <button id="record-button" title="Record Audio" class="send-button"><i class="fas fa-microphone"></i></button>
                     <input 
                         type="text" 
                         id="message-input" 
@@ -398,6 +418,14 @@ if (!isset($_SESSION['user_id'])) {
                     <button id="send-button" class="send-button">
                         <i class="fas fa-paper-plane"></i>
                     </button>
+                </div>
+                <div class="recording-wrapper" id="recording-wrapper" style="display: none;">
+                    <button id="cancel-record-button" title="Cancel Recording"><i class="fas fa-trash"></i></button>
+                    <div class="recording-status">
+                        <i class="fas fa-circle-notch fa-spin"></i>
+                        <span id="record-timer">00:00</span>
+                    </div>
+                    <button id="send-record-button" title="Send Recording"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </main>

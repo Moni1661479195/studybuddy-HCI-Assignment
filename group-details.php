@@ -59,6 +59,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['invite_user'])) {
                     ");
                     $stmt->execute([$group_id, $current_user_id, $invitee_id]);
                     $_SESSION['success'] = "Invitation sent successfully!";
+
+                    // Create a notification for the receiver
+                    $group_name = $group['group_name']; // $group is available from earlier in the script
+                    $notification_message = "You have been invited to join the group: " . htmlspecialchars($group_name);
+                    $stmt_notify = $db->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
+                    $stmt_notify->execute([$invitee_id, $notification_message]);
                 }
             }
         } catch (Exception $e) {
@@ -97,10 +103,10 @@ $members_stmt = $db->prepare("
         u.last_name,
         u.email,
         u.skill_level,
-        uos.is_online
+        u.is_online,
+        u.profile_picture_path
     FROM study_group_members sgm
     JOIN users u ON sgm.user_id = u.id
-    LEFT JOIN user_online_status uos ON u.id = uos.user_id
     WHERE sgm.group_id = ?
     ORDER BY 
         CASE sgm.role 
@@ -152,24 +158,23 @@ $chat_room = $room_stmt->fetch(PDO::FETCH_ASSOC);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($group['group_name']); ?> - Study Buddy</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+
         * { margin: 0; padding: 0; box-sizing: border-box; }
         
         body {
             font-family: 'Inter', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background-color: #ffffff; /* Changed to white */
             min-height: 100vh;
         }
 
-        #navbar {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+
 
         .logo {
             font-size: 2rem;
@@ -333,6 +338,13 @@ $chat_room = $room_stmt->fetch(PDO::FETCH_ASSOC);
             font-weight: 700;
             font-size: 1.1rem;
             position: relative;
+            overflow: hidden; /* Ensure image stays within circle */
+        }
+
+        .member-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .online-indicator {
@@ -482,7 +494,7 @@ $chat_room = $room_stmt->fetch(PDO::FETCH_ASSOC);
 <body>
     <?php include 'header.php'; ?>
 
-    <div class="container">
+    <div class="container mt-24 md:mt-28">
         <?php if (isset($_SESSION['success'])): ?>
             <div class="alert alert-success">
                 <i class="fas fa-check-circle"></i> <?php echo htmlspecialchars($_SESSION['success']); unset($_SESSION['success']); ?>
@@ -518,11 +530,6 @@ $chat_room = $room_stmt->fetch(PDO::FETCH_ASSOC);
                     <?php endif; ?>
                 </div>
                 <div class="group-actions">
-                    <?php if ($chat_room): ?>
-                        <a href="group-chat.php?room_id=<?php echo $chat_room['id']; ?>" class="btn btn-primary">
-                            <i class="fas fa-comments"></i> Group Chat
-                        </a>
-                    <?php endif; ?>
                     <?php if ($is_creator): ?>
                         <button class="btn btn-success" onclick="openSettingsModal()">
                             <i class="fas fa-cog"></i> Settings
@@ -552,11 +559,15 @@ $chat_room = $room_stmt->fetch(PDO::FETCH_ASSOC);
                     ?>
                         <div class="member-item">
                             <div class="member-avatar">
+                            <?php if (!empty($member['profile_picture_path'])): ?>
+                                <img src="<?php echo htmlspecialchars($member['profile_picture_path']); ?>" alt="<?php echo htmlspecialchars($member['first_name']); ?>'s avatar">
+                            <?php else: ?>
                                 <?php echo $initials; ?>
-                                <?php if ($member['is_online']): ?>
-                                    <span class="online-indicator"></span>
-                                <?php endif; ?>
-                            </div>
+                            <?php endif; ?>
+                            <?php if ($member['is_online']): ?>
+                                <span class="online-indicator"></span>
+                            <?php endif; ?>
+                        </div>
                             <div class="member-info">
                                 <div class="member-name"><?php echo htmlspecialchars($member['first_name'] . ' ' . $member['last_name']); ?></div>
                                 <span class="member-role <?php echo $role_class; ?>">

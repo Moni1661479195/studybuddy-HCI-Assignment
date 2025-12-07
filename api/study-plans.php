@@ -92,27 +92,36 @@ try {
  * Get all study plans for a user with progress calculation
  */
 function getAllPlans($db, $user_id) {
+    $search = $_GET['search'] ?? '';
+    $params = [$user_id];
+    
     $sql = "SELECT 
-                sp.id,
-                sp.name,
-                sp.description,
-                sp.due_date,
-                sp.status,
-                sp.created_at,
-                COUNT(spt.id) AS total_tasks,
-                SUM(CASE WHEN spt.is_completed = 1 THEN 1 ELSE 0 END) AS completed_tasks,
-                CASE 
-                    WHEN COUNT(spt.id) = 0 THEN 0
-                    ELSE ROUND((SUM(CASE WHEN spt.is_completed = 1 THEN 1 ELSE 0 END) / COUNT(spt.id)) * 100, 0)
-                END AS progress
-            FROM study_plans sp
-            LEFT JOIN study_plan_tasks spt ON sp.id = spt.plan_id
-            WHERE sp.user_id = ?
-            GROUP BY sp.id, sp.name, sp.description, sp.due_date, sp.status, sp.created_at
-            ORDER BY sp.due_date ASC";
+                    sp.id,
+                    sp.name,
+                    sp.description,
+                    sp.due_date,
+                    sp.status,
+                    sp.created_at,
+                    COUNT(spt.id) AS total_tasks,
+                    COALESCE(SUM(CASE WHEN spt.is_completed = 1 THEN 1 ELSE 0 END), 0) AS completed_tasks,
+                    CASE 
+                        WHEN COUNT(spt.id) = 0 THEN 0
+                        ELSE ROUND((COALESCE(SUM(CASE WHEN spt.is_completed = 1 THEN 1 ELSE 0 END), 0) / COUNT(spt.id)) * 100, 0)
+                    END AS progress
+                FROM study_plans sp
+                LEFT JOIN study_plan_tasks spt ON sp.id = spt.plan_id
+                WHERE sp.user_id = ?";
+                
+    if (!empty($search)) {
+        $sql .= " AND sp.name LIKE ?";
+        $params[] = "%$search%";
+    }
+    
+    $sql .= " GROUP BY sp.id, sp.name, sp.description, sp.due_date, sp.status, sp.created_at
+              ORDER BY sp.due_date ASC";
     
     $stmt = $db->prepare($sql);
-    $stmt->execute([$user_id]);
+    $stmt->execute($params);
     $plans = $stmt->fetchAll(PDO::FETCH_ASSOC);
     
     // Check and update status for each plan
@@ -140,15 +149,19 @@ function getAllPlans($db, $user_id) {
  * Get detailed information about a specific plan including all tasks
  */
 function getPlanDetails($db, $user_id, $plan_id) {
-    // Get plan info
-    $sql = "SELECT * FROM study_plans WHERE id = ? AND user_id = ?";
+    // Get plan info - Allow viewing any plan if you have the ID (for sharing)
+    // We removed 'AND user_id = ?' to allow shared access
+    $sql = "SELECT * FROM study_plans WHERE id = ?";
     $stmt = $db->prepare($sql);
-    $stmt->execute([$plan_id, $user_id]);
+    $stmt->execute([$plan_id]);
     $plan = $stmt->fetch(PDO::FETCH_ASSOC);
     
     if (!$plan) {
         throw new Exception('Plan not found');
     }
+
+    // Determine ownership
+    $is_owner = ($plan['user_id'] == $user_id);
     
     // Get all tasks for this plan
     $task_sql = "SELECT * FROM study_plan_tasks WHERE plan_id = ? ORDER BY display_order ASC, id ASC";
@@ -168,6 +181,7 @@ function getPlanDetails($db, $user_id, $plan_id) {
     $plan['total_tasks'] = $total_tasks;
     $plan['completed_tasks'] = $completed_tasks;
     $plan['progress'] = $progress;
+    $plan['is_owner'] = $is_owner; // Add ownership flag
     
     echo json_encode(['success' => true, 'plan' => $plan]);
 }
@@ -371,6 +385,27 @@ function toggleTaskCompletion($db, $user_id, $data) {
     $stmt = $db->prepare($sql);
     $stmt->execute([$is_completed, $task_id]);
     
+    // Check if Plan is fully completed
+    if ($is_completed) {
+        // Get plan_id for this task
+        $stmt_pid = $db->prepare("SELECT plan_id FROM study_plan_tasks WHERE id = ?");
+        $stmt_pid->execute([$task_id]);
+        $plan_id = $stmt_pid->fetchColumn();
+
+        if ($plan_id) {
+            // Check if any incomplete tasks remain
+            $stmt_check = $db->prepare("SELECT COUNT(*) FROM study_plan_tasks WHERE plan_id = ? AND is_completed = 0");
+            $stmt_check->execute([$plan_id]);
+            $incomplete_count = $stmt_check->fetchColumn();
+
+            if ($incomplete_count == 0) {
+                // Task: Master Planner (Weekly)
+                require_once __DIR__ . '/../includes/TaskLogic.php';
+                updateTaskProgress($db, $user_id, 'weekly_plan');
+            }
+        }
+    }
+
     echo json_encode([
         'success' => true,
         'message' => 'Task status updated successfully'

@@ -2,6 +2,7 @@
 // api/send_study_request.php
 require_once '../session.php';
 require_once __DIR__ . '/../lib/db.php';
+require_once __DIR__ . '/../includes/notifications.php';
 
 // Always redirect back to the quick-match page
 $redirect_url = '../quick-match.php';
@@ -63,6 +64,11 @@ try {
         VALUES (?, ?, ?, 'pending', NOW())
     ");
     $stmt->execute([$current_user_id, $receiver_id, $message]);
+
+    // Create a notification for the recipient
+    $sender_username = $_SESSION['username'] ?? 'A user';
+    $notification_message = htmlspecialchars($sender_username) . ' has sent you a study partner request.';
+    create_notification($receiver_id, 'study_request', $notification_message, 'dashboard.php#study-requests');
     
     $_SESSION['success'] = "Study request sent successfully!";
     

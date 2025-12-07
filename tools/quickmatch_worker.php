@@ -1,92 +1,222 @@
 <?php
-// File-based locking mechanism to ensure only one instance runs at a time
-$lockFile = '/tmp/quickmatch_worker.lock';
-$fp = fopen($lockFile, 'c');
+require_once __DIR__ . '/../lib/db.php';
 
-// Try to get an exclusive non-blocking lock
-if (!flock($fp, LOCK_EX | LOCK_NB)) {
-    // Another instance is still running, exit gracefully
-    exit("Quickmatch worker: Another instance is already running. Exiting.\n");
+class QuickMatchWorker {
+    private $db;
+
+    public function __construct() {
+        $this->db = get_db();
+        $this->db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    }
+
+    public function run() {
+        echo "QuickMatchWorker started.\n";
+        while (true) {
+            try {
+                $this->log("Starting new queue processing cycle.");
+                $this->processQueue();
+                $this->log("Finished queue processing cycle.");
+            } catch (PDOException $e) {
+                $log_message = "QuickMatchWorker PDO Error: " . $e->getMessage() . " in " . $e->getFile() . " on line " . $e->getLine();
+                error_log($log_message);
+                $this->log($log_message);
+                echo $log_message . "\n";
+            } catch (Exception $e) {
+                $log_message = "QuickMatchWorker General Error: " . $e->getMessage();
+                error_log($log_message);
+                $this->log($log_message);
+                echo $log_message . "\n";
+            }
+            sleep(5); // Poll every 5 seconds
+        }
+    }
+
+    private function log($message) {
+        file_put_contents(__DIR__ . '/../quickmatch_worker.log', date('[Y-m-d H:i:s] ') . $message . "\n", FILE_APPEND);
+    }
+
+    private function processQueue() {
+        $this->db->beginTransaction();
+        try {
+            // Cleanup old matched records (older than 24 hours)
+            $cleanup_stmt = $this->db->prepare("DELETE FROM quick_match_queue WHERE status = 'matched' AND requested_at < NOW() - INTERVAL 24 HOUR");
+            $cleanup_stmt->execute();
+
+            $stmt = $this->db->prepare("SELECT q.*, u.skill_level, u.gender FROM quick_match_queue q JOIN users u ON q.user_id = u.id WHERE q.status = 'open' AND q.requested_at > NOW() - INTERVAL 1 HOUR ORDER BY q.requested_at ASC FOR UPDATE");
+            $stmt->execute();
+            $requests = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            if (count($requests) > 0) {
+                $this->log("Found " . count($requests) . " open requests in the queue.");
+            }
+
+            $matched_user_ids = [];
+            $unmatched_requests = [];
+
+            // Priority 1: Match users within the queue
+            if (count($requests) >= 2) {
+                for ($i = 0; $i < count($requests); $i++) {
+                    $userA_request = $requests[$i];
+                    $userA_id = (int)$userA_request['user_id'];
+
+                    if (in_array($userA_id, $matched_user_ids)) {
+                        continue;
+                    }
+
+                    for ($j = $i + 1; $j < count($requests); $j++) {
+                        $userB_request = $requests[$j];
+                        $userB_id = (int)$userB_request['user_id'];
+
+                        if (in_array($userB_id, $matched_user_ids)) {
+                            continue;
+                        }
+
+                        // Check for mutual preference match
+                        $A_likes_B = ($userA_request['desired_skill_level'] === 'any' || $userA_request['desired_skill_level'] === $userB_request['skill_level']) &&
+                                     ($userA_request['desired_gender'] === 'any' || $userA_request['desired_gender'] === $userB_request['gender']);
+
+                        $B_likes_A = ($userB_request['desired_skill_level'] === 'any' || $userB_request['desired_skill_level'] === $userA_request['skill_level']) &&
+                                     ($userB_request['desired_gender'] === 'any' || $userB_request['desired_gender'] === $userA_request['gender']);
+
+                        if ($A_likes_B && $B_likes_A) {
+                            $this->createMatch($userA_id, $userB_id);
+                            $matched_user_ids[] = $userA_id;
+                            $matched_user_ids[] = $userB_id;
+                            break; // userA is matched, move to next user in outer loop
+                        }
+                    }
+                }
+            }
+
+            // Collect unmatched users
+            foreach ($requests as $request) {
+                if (!in_array((int)$request['user_id'], $matched_user_ids)) {
+                    $unmatched_requests[] = $request;
+                }
+            }
+
+            // Priorities 2 & 3: Match remaining users externally
+            if (count($unmatched_requests) > 0) {
+                $this->log("Processing " . count($unmatched_requests) . " unmatched users for external matching.");
+
+                foreach ($unmatched_requests as $userA_request) {
+                    $userA_id = (int)$userA_request['user_id'];
+                    $this->log("Searching for external match for user {$userA_id}.");
+
+                    $userA_profile = [
+                        'skill_level' => $userA_request['skill_level'],
+                        'gender' => $userA_request['gender']
+                    ];
+
+                    $partner_id = $this->findExternalMatch($userA_request, $userA_profile, true); // Online
+                    if (!$partner_id) {
+                        $partner_id = $this->findExternalMatch($userA_request, $userA_profile, false); // Offline
+                    }
+
+                    if ($partner_id) {
+                        $this->log("Found external match for {$userA_id}: {$partner_id}");
+                        $this->createMatch($userA_id, $partner_id);
+                    } else {
+                        $this->log("No external match found for user {$userA_id}.");
+                    }
+                }
+            }
+
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
+
+
+
+
+    private function findExternalMatch($userA_request, $userA_profile, $is_online) {
+        $sql = "SELECT u.id
+                FROM users u
+                WHERE u.id != :userA_id_1 AND u.is_admin = 0";
+
+        if ($is_online) {
+            $sql .= " AND u.is_online = 1";
+        } else {
+            $sql .= " AND u.is_online = 0";
+        }
+
+        $sql .= " AND NOT EXISTS (
+                    SELECT 1
+                    FROM study_partners sp
+                    WHERE ((sp.user1_id = :userA_id_2 AND sp.user2_id = u.id) OR (sp.user1_id = u.id AND sp.user2_id = :userA_id_3)) AND sp.is_active = 1
+                )";
+
+        $params = [
+            ':userA_id_1' => $userA_request['user_id'],
+            ':userA_id_2' => $userA_request['user_id'],
+            ':userA_id_3' => $userA_request['user_id']
+        ];
+
+        $userA_desired_skill = $userA_request['desired_skill_level'] ?? 'any';
+        $userA_desired_gender = $userA_request['desired_gender'] ?? 'any';
+
+        if ($userA_desired_skill !== 'any') {
+            $sql .= " AND u.skill_level = :userA_desired_skill";
+            $params[':userA_desired_skill'] = $userA_desired_skill;
+        }
+        if ($userA_desired_gender !== 'any') {
+            $sql .= " AND u.gender = :userA_desired_gender";
+            $params[':userA_desired_gender'] = $userA_desired_gender;
+        }
+
+        $sql .= " AND NOT EXISTS (SELECT 1 FROM quick_match_queue WHERE user_id = u.id)";
+        $sql .= " ORDER BY RAND() LIMIT 1";
+
+        $this->log("Executing findExternalMatch query: " . $sql . " with params: " . json_encode($params));
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+
+        $candidate = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($candidate) {
+            $this->log("Found external candidate: user_id=" . $candidate['id']);
+        } else {
+            $this->log("No suitable external candidate found.");
+        }
+        return $candidate ? (int)$candidate['id'] : null;
+    }
+
+    private function createMatch($userA_id, $userB_id) {
+        $this->log("Creating match between user {" . $userA_id . "} and user {" . $userB_id . "}");
+
+        // Check if userB exists in the queue
+        $stmt_check = $this->db->prepare("SELECT COUNT(*) FROM quick_match_queue WHERE user_id = ?");
+        $stmt_check->execute([$userB_id]);
+        $userB_in_queue = $stmt_check->fetchColumn() > 0;
+
+        if ($userB_in_queue) {
+            // Both users are in the queue, update them atomically.
+            $this->log("Both users are in the queue. Updating atomically.");
+            $stmt = $this->db->prepare(
+                "UPDATE quick_match_queue
+                 SET status = 'matched',
+                     matched_with = CASE WHEN user_id = ? THEN ? ELSE ? END
+                 WHERE user_id IN (?, ?)"
+            );
+            $stmt->execute([$userA_id, $userB_id, $userA_id, $userA_id, $userB_id]);
+        } else {
+            // User B is external, update A and insert B.
+            $this->log("User {" . $userB_id . "} is external. Updating user {" . $userA_id . "} and inserting user {" . $userB_id . "}.");
+            $stmt_A = $this->db->prepare("UPDATE quick_match_queue SET status = 'matched', matched_with = ? WHERE user_id = ?");
+            $stmt_A->execute([$userB_id, $userA_id]);
+
+            $stmt_B = $this->db->prepare("INSERT INTO quick_match_queue (user_id, status, matched_with, requested_at) VALUES (?, 'matched', ?, NOW())");
+            $stmt_B->execute([$userB_id, $userA_id]);
+        }
+
+        $this->log("Successfully created match between user {" . $userA_id . "} and user {" . $userB_id . "}");
+    }
 }
 
-// Ensure the lock is released when the script finishes
-register_shutdown_function(function() use ($fp, $lockFile) {
-    flock($fp, LOCK_UN); // Release the lock
-    fclose($fp); // Close the file pointer
-    // Optionally, delete the lock file if it's empty or not needed for debugging
-    // if (file_exists($lockFile) && filesize($lockFile) == 0) {
-    //     unlink($lockFile);
-    // }
-});
-
-
-require_once __DIR__.'/../lib/db.php';
-require_once __DIR__.'/../lib/matching.php';
-
-$db = null; // Initialize $db
-
-try {
-    $db = get_db(); // Get connection
-
-    // --- Worker logic (single iteration) ---
-    // pick two open entries (simple approach)
-    $rows = $db->query("SELECT id, user_id FROM quick_match_queue WHERE status='open' GROUP BY user_id ORDER BY requested_at ASC LIMIT 2")->fetchAll();
-    
-    if (count($rows) < 2) {
-        // No matches, exit
-        exit("Quickmatch worker: No pending matches. Exiting.\n");
-    }
-    
-    $e1 = $rows[0]; $e2 = $rows[1];
-    
-    $db->beginTransaction();
-    
-    // lock rows for update to avoid races
-    $lock1 = $db->prepare("SELECT * FROM quick_match_queue WHERE id = ? FOR UPDATE");
-    $lock1->execute([$e1['id']]); 
-    $entry1 = $lock1->fetch();
-    
-    $lock2 = $db->prepare("SELECT * FROM quick_match_queue WHERE id = ? FOR UPDATE");
-    $lock2->execute([$e2['id']]); 
-    $entry2 = $lock2->fetch();
-    
-    if (!$entry1 || !$entry2 || $entry1['status'] !== 'open' || $entry2['status'] !== 'open') { 
-        $db->rollBack(); 
-        exit("Quickmatch worker: Entries not valid or already matched. Exiting.\n");
-    }
-    
-    $p1 = get_user_profile($db, (int)$entry1['user_id']);
-    $p2 = get_user_profile($db, (int)$entry2['user_id']);
-    $score = compute_hybrid_score($p1, $p2);
-    
-    if ($score < 0.12) { 
-        $db->rollBack(); 
-        exit("Quickmatch worker: Score too low. Exiting.\n");
-    }
-    
-    $u1 = (int)$entry1['user_id']; 
-    $u2 = (int)$entry2['user_id'];
-    
-    $upd = $db->prepare("UPDATE quick_match_queue SET status='matched', matched_with = ? WHERE id = ?");
-    $upd->execute([$u2, $entry1['id']]);
-    $upd->execute([$u1, $entry2['id']]);
-    
-    $create = $db->prepare("INSERT INTO study_sessions (user_id, started_at, is_group, metadata) VALUES (?,?,1,?)");
-    $metadata = json_encode(['group'=>[$u1, $u2]]);
-    $create->execute([$u1, date('Y-m-d H:i:s'), $metadata]);
-    
-    $db->commit();
-    
-    echo "Matched {$u1} with {$u2} score={$score}\n";
-    
-} catch (Exception $e) {
-    if ($db && $db->inTransaction()) {
-        $db->rollBack();
-    }
-    error_log("Quickmatch worker error: " . $e->getMessage());
-    exit("Quickmatch worker: An error occurred: " . $e->getMessage() . "\n");
-} finally {
-    // The close_db() is already registered as a shutdown function in lib/db.php
-    // This will handle closing the DB connection when the script exits.
-}
+$worker = new QuickMatchWorker();
+$worker->run();
 ?>

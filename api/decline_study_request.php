@@ -1,5 +1,7 @@
+<?php
 require_once __DIR__ . '/../lib/db.php';
 require_once '../session.php';
+require_once __DIR__ . '/../includes/notifications.php';
 
 header('Content-Type: application/json');
 
@@ -21,13 +23,13 @@ try {
     $db = get_db();
 
     // Verify the request exists and belongs to the current user as receiver, and is pending
-    $stmt_verify = $db->prepare("SELECT sender_id FROM study_requests WHERE request_id = ? AND receiver_id = ? AND status = 'pending'");
+    $stmt_verify = $db->prepare("SELECT sender_id FROM study_requests WHERE id = ? AND receiver_id = ? AND status = 'pending'");
     $stmt_verify->execute([$request_id, $user_id]);
     $sender_id = $stmt_verify->fetchColumn();
 
     if (!$sender_id) {
         // Check if the request exists but is not pending
-        $stmt_check_status = $db->prepare("SELECT status FROM study_requests WHERE request_id = ? AND receiver_id = ?");
+        $stmt_check_status = $db->prepare("SELECT status FROM study_requests WHERE id = ? AND receiver_id = ?");
         $stmt_check_status->execute([$request_id, $user_id]);
         $current_status = $stmt_check_status->fetchColumn();
 
@@ -43,19 +45,16 @@ try {
         exit();
     }
 
-    // Instead of updating status to declined, we delete the request to keep the state consistent for both users
-    $stmt_delete = $db->prepare("DELETE FROM study_requests WHERE request_id = ?");
-    $stmt_delete->execute([$request_id]);
+    // Update status to 'declined'
+    $stmt_update = $db->prepare("UPDATE study_requests SET status = 'declined', responded_at = NOW() WHERE id = ?");
+    $stmt_update->execute([$request_id]);
 
-    if ($stmt_delete->rowCount() > 0) {
+    if ($stmt_update->rowCount() > 0) {
         // Notify the sender that their request was declined
-        $receiver_name_stmt = $db->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
-        $receiver_name_stmt->execute([$user_id]);
-        $receiver_name = $receiver_name_stmt->fetch(PDO::FETCH_ASSOC);
-        $message = htmlspecialchars($receiver_name['first_name'] . ' ' . $receiver_name['last_name']) . " declined your study request.";
-        
-        $stmt_notification = $db->prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, NOW())");
-        $stmt_notification->execute([$sender_id, $message]);
+        $receiver_name = $_SESSION['username'] ?? 'Someone';
+        $message = htmlspecialchars($receiver_name) . " declined your study request.";
+        $link = 'user_profile.php?id=' . $user_id;
+        create_notification($sender_id, 'study_request_declined', $message, $link);
 
         echo json_encode(['success' => true, 'message' => 'Study request declined successfully!']);
     } else {

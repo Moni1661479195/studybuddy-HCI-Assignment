@@ -12,7 +12,7 @@ if (!isset($_SESSION['user_id'])) {
 $current_user_id = (int)$_SESSION['user_id'];
 $query = isset($_GET['q']) ? trim($_GET['q']) : '';
 
-if (empty($query) || strlen($query) < 2) {
+if (empty($query) || strlen($query) < 1) {
     echo json_encode(['suggestions' => []]);
     exit();
 }
@@ -23,13 +23,13 @@ try {
     $search_lower = "%" . strtolower($query) . "%";
 
     $stmt = $db->prepare(" 
-        SELECT id, first_name, last_name, email FROM users 
+        SELECT id, first_name, last_name, email, profile_picture_path FROM users 
         WHERE (
             LOWER(first_name) LIKE ? OR 
             LOWER(last_name) LIKE ? OR 
             LOWER(email) LIKE ? OR
             LOWER(CONCAT(first_name, ' ', last_name)) LIKE ?
-        ) AND id != ? 
+        ) AND id != ? AND is_admin = 0 
         LIMIT 5
     ");
     $stmt->execute([

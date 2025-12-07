@@ -11,6 +11,7 @@ require_once 'session.php';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="assets/css/modern_index.css">
     <style>
         * {
             margin: 0;
@@ -138,32 +139,7 @@ require_once 'session.php';
             box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
         }
 
-        .footer {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
 
-        .footer p {
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
-            color: white;
-        }
-
-        .footer-links a {
-            color: white;
-            text-decoration: none;
-            margin: 0 0.75rem;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            opacity: 1;
-        }
 
         @media (max-width: 480px) {
             #navbar {
@@ -305,14 +281,7 @@ require_once 'session.php';
         </div>
     </div>
 
-    <footer class="footer">
-        <p>&copy; <?php echo date("Y"); ?> Study Buddy. All rights reserved.</p>
-        <div class="footer-links">
-            <a href="index.php">Home</a>
-            <a href="terms.php">Terms of Service</a>
-            <a href="privacy.php">Privacy Policy</a>
-        </div>
-    </footer>
+    <?php include 'footer.php'; ?>
 
     <script>
         // Navbar hide/show on scroll

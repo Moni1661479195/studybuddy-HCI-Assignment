@@ -5,53 +5,45 @@ require_once __DIR__ . '/../lib/db.php';
 header('Content-Type: application/json');
 
 if (!isset($_SESSION['user_id'])) {
+    http_response_code(401);
     echo json_encode(['success' => false, 'message' => 'User not logged in.']);
     exit();
 }
 
 $current_user_id = (int)$_SESSION['user_id'];
-$input = json_decode(file_get_contents('php://input'), true);
-$mate_id = isset($input['mate_id']) ? (int)$input['mate_id'] : 0;
+$mate_id = isset($_POST['mate_id']) ? (int)$_POST['mate_id'] : 0;
 
 if ($mate_id <= 0) {
+    http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Invalid study mate ID.']);
     exit();
 }
 
 if ($current_user_id == $mate_id) {
+    http_response_code(400);
     echo json_encode(['success' => false, 'message' => 'Cannot remove yourself as a study mate.']);
     exit();
 }
 
 try {
     $db = get_db();
-    $db->beginTransaction();
 
-    // 1. Delete the accepted study request entry
-    $stmt_delete_request = $db->prepare("
-        DELETE FROM study_requests 
-        WHERE (
-            (sender_id = ? AND receiver_id = ?) OR 
-            (sender_id = ? AND receiver_id = ?)
-        ) AND status = 'accepted'
-    ");
-    $stmt_delete_request->execute([$current_user_id, $mate_id, $mate_id, $current_user_id]);
+    $user1 = min($current_user_id, $mate_id);
+    $user2 = max($current_user_id, $mate_id);
 
-    // 2. Delete the study session entry
-    // This assumes a study session is created for each accepted request
-    $stmt_delete_session = $db->prepare("
-        DELETE FROM study_sessions 
-        WHERE is_group = 1 
-          AND JSON_CONTAINS(metadata, JSON_ARRAY(?, ?), '$.group')
-    ");
-    $stmt_delete_session->execute([$current_user_id, $mate_id]);
+    $stmt = $db->prepare("UPDATE study_partners SET is_active = 0 WHERE user1_id = ? AND user2_id = ? AND is_active = 1");
+    $stmt->execute([$user1, $user2]);
 
-    $db->commit();
+    if ($stmt->rowCount() > 0) {
+        echo json_encode(['success' => true, 'message' => 'Study mate removed successfully.']);
+    } else {
+        http_response_code(404);
+        echo json_encode(['success' => false, 'message' => 'Could not find an active study partnership to remove.']);
+    }
 
-    echo json_encode(['success' => true, 'message' => 'Study mate removed successfully.']);
 } catch (Exception $e) {
-    $db->rollBack();
     error_log("Error removing study mate: " . $e->getMessage());
+    http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'An error occurred while removing the study mate.']);
 }
 ?>

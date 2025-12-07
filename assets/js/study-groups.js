@@ -1,57 +1,69 @@
-function openCreateModal() {
-            document.getElementById('createGroupModal').classList.add('active');
-        }
+document.addEventListener('DOMContentLoaded', () => {
 
-        function closeCreateModal() {
-            document.getElementById('createGroupModal').classList.remove('active');
-        }
+    // --- MODAL CONTROLLERS ---
 
-        // Close modal when clicking outside
-        document.getElementById('createGroupModal').addEventListener('click', function(e) {
+    // Create Group Modal
+    const createGroupModal = document.getElementById('createGroupModal');
+    if (createGroupModal) {
+        window.openCreateModal = () => createGroupModal.classList.add('active');
+        window.closeCreateModal = () => createGroupModal.classList.remove('active');
+        createGroupModal.addEventListener('click', function(e) {
             if (e.target === this) {
-                closeCreateModal();
+                window.closeCreateModal();
             }
         });
+    }
 
-            // Quick Match Modal Controller
+    // Quick Match Modal Controller
     class QuickMatchModal {
         constructor() {
             this.modal = document.getElementById('quick-match-modal');
+            if (!this.modal) return; // Do nothing if modal doesn't exist
+
             this.searchingState = document.getElementById('searching-state');
             this.matchFoundState = document.getElementById('match-found-state');
             this.queueInfo = document.getElementById('queue-info');
             this.queueCount = document.getElementById('queue-count');
             
-            this.matchedUser = null; // Store matched user info
+            this.matchedUser = null;
             this.searchInterval = null;
             this.queueCheckInterval = null;
+
+            this.bindEvents();
         }
-    
+
+        bindEvents() {
+            document.getElementById('start-quick-match-btn')?.addEventListener('click', () => this.open());
+            document.getElementById('cancel-search')?.addEventListener('click', () => this.cancelSearch());
+            document.getElementById('send-request-from-match')?.addEventListener('click', () => this.sendRequest());
+            document.getElementById('view-profile-from-match')?.addEventListener('click', () => this.viewProfile());
+            document.getElementById('close-match-modal')?.addEventListener('click', () => this.close());
+        }
+
         open() {
             this.modal.classList.add('active');
             this.showSearching();
             this.startSearch();
         }
-    
+
         close() {
             this.modal.classList.remove('active');
             this.stopSearch();
-            this.matchedUser = null; // Clear user info
-            // Restore button state for next use
+            this.matchedUser = null;
             const sendBtn = document.getElementById('send-request-from-match');
             if(sendBtn) {
                 sendBtn.disabled = false;
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Study Request';
             }
         }
-    
+
         showSearching() {
             this.searchingState.style.display = 'block';
             this.matchFoundState.classList.remove('active');
         }
-    
+
         showMatchFound(user) {
-            this.matchedUser = user; // Key: store the matched user
+            this.matchedUser = user;
             this.searchingState.style.display = 'none';
             this.matchFoundState.classList.add('active');
             
@@ -63,19 +75,22 @@ function openCreateModal() {
                 <div class="matched-user-info">
                     <div class="matched-user-name">${user.first_name} ${user.last_name}</div>
                     <div class="matched-user-email">Skill Level: ${user.skill_level || 'Not set'}</div>
+                    <div class="matched-user-gender">Gender: ${user.gender || 'Not set'}</div>
                 </div>
             `;
         }
-    
+
         async startSearch() {
             const desiredSkillLevel = document.getElementById('desired-skill-level-select').value;
+            const desiredGender = document.getElementById('desired-gender-select').value;
             try {
                 const response = await fetch('api/quick_match.php', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
                         action: 'join_queue',
-                        desiredSkillLevel: desiredSkillLevel
+                        desiredSkillLevel: desiredSkillLevel,
+                        desiredGender: desiredGender
                     })
                 });
                 const result = await response.json();
@@ -92,7 +107,7 @@ function openCreateModal() {
                 this.close();
             }
         }
-    
+
         async checkForMatch() {
             try {
                 const response = await fetch('api/quick_match.php?action=check_match');
@@ -105,7 +120,7 @@ function openCreateModal() {
                 console.error('Check match error:', error);
             }
         }
-    
+
         async updateQueueCount() {
             try {
                 const response = await fetch('api/quick_match.php?action=queue_count');
@@ -122,14 +137,14 @@ function openCreateModal() {
                 console.error('Queue count error:', error);
             }
         }
-    
+
         stopSearch() {
             clearInterval(this.searchInterval);
             this.searchInterval = null;
             clearInterval(this.queueCheckInterval);
             this.queueCheckInterval = null;
         }
-    
+
         async cancelSearch() {
             try {
                 await fetch('api/quick_match.php', {
@@ -143,32 +158,24 @@ function openCreateModal() {
                 this.close();
             }
         }
-    
-        // --- New Method: Send Study Request ---
+
         async sendRequest() {
             if (!this.matchedUser) return;
-    
+
             const sendBtn = document.getElementById('send-request-from-match');
             sendBtn.disabled = true;
             sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Sending...';
-    
+
             const formData = new FormData();
             formData.append('action', 'send_study_request');
             formData.append('receiver_id', this.matchedUser.id);
-    
+
             try {
-                const response = await fetch('study-groups.php', {
-                    method: 'POST',
-                    body: formData
-                });
-    
-                // Regardless of backend response, show confirmation on frontend
+                // We send this request to the main study-groups page to leverage its action handling
+                const response = await fetch('study-groups.php', { method: 'POST', body: formData });
+                // We don't need to process the response, just know it was sent.
                 sendBtn.innerHTML = '<i class="fas fa-check"></i> Request Sent!';
-                // Close modal after 2 seconds
-                setTimeout(() => {
-                    this.close();
-                }, 2000);
-    
+                setTimeout(() => this.close(), 2000);
             } catch (error) {
                 console.error('Send request error:', error);
                 alert('Failed to send the request. Please try again.');
@@ -176,248 +183,144 @@ function openCreateModal() {
                 sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Study Request';
             }
         }
-    
+
         viewProfile() {
             if (this.matchedUser) {
                 window.location.href = `user_profile.php?id=${this.matchedUser.id}`;
             }
         }
     }
-    
-    // Initialize modal
-    const quickMatchModal = new QuickMatchModal();
-    
-    // --- Updated Event Listeners ---
-    document.addEventListener('DOMContentLoaded', () => {
-        // Listen for main button
-        document.getElementById('start-quick-match-btn')?.addEventListener('click', () => {
-            quickMatchModal.open();
-        });
-    
-        // Listen for modal internal buttons
-        document.getElementById('cancel-search')?.addEventListener('click', () => {
-            quickMatchModal.cancelSearch();
-        });
-    
-        document.getElementById('send-request-from-match')?.addEventListener('click', () => {
-            quickMatchModal.sendRequest();
-        });
-    
-        document.getElementById('view-profile-from-match')?.addEventListener('click', () => {
-            quickMatchModal.viewProfile();
-        });
-        
-        document.getElementById('close-match-modal')?.addEventListener('click', () => {
-            quickMatchModal.close();
-        });
-    
-        // ... Keep your existing AJAX form submission logic ...
-        // ... For example: dashboardCard.addEventListener('submit', e => { ... });
-    });
-    
-            // Expose to global scope for use in other scripts
-            window.quickMatchModal = quickMatchModal;
-    
-            // Example usage: Add this to your quick match button
-            // document.getElementById('quick-match-button').addEventListener('click', () => {
-            //     quickMatchModal.open();
-            // });
 
-        document.addEventListener('DOMContentLoaded', () => {
-            const dashboardCard = document.querySelector('.dashboard-card');
-            if (!dashboardCard) return;
-    
-            const preserveScroll = (promise) => {
-                const scrollY = window.scrollY;
-                return promise.then(() => {
-                    window.scrollTo(0, scrollY);
-                });
+    // Initialize the modal controller
+    new QuickMatchModal();
+
+
+
+
+
+
+    // --- LIVE UPDATES & AJAX FORM SUBMISSIONS ---
+
+    const dashboardCard = document.querySelector('.dashboard-card');
+    if (!dashboardCard) return;
+
+    const preserveScroll = (promise) => {
+        const scrollY = window.scrollY;
+        return promise.then(() => {
+            window.scrollTo(0, scrollY);
+        });
+    };
+
+    dashboardCard.addEventListener('submit', e => {
+        const form = e.target;
+        if (form.matches('form[action="study-groups.php"]') && !form.classList.contains('no-ajax')) {
+            e.preventDefault();
+            const formData = new FormData(form);
+            fetch('study-groups.php', { method: 'POST', body: formData })
+                .then(response => response.text()) // We still need to fetch the response to handle potential messages
+                .then(() => {
+                    // After the form submission, trigger an immediate update of all sections
+                    checkForUpdates();
+                })
+                .then(() => preserveScroll(Promise.resolve()));
+        }
+    });
+
+    const checkForUpdates = async () => {
+        try {
+            const response = await fetch(`ajax/check_updates.php?_=${new Date().getTime()}`);
+            const data = await response.json();
+
+            // Sections to update, now including groups and invitations
+            const sections = {
+                '#my-groups-section': data.my_groups_html,
+                '#invitations-section': data.invitations_html,
+                '#study-mates-section': data.study_mates_html,
+                '#requests-section': data.received_requests_html,
+                '#sent-requests-section': data.sent_requests_html,
+                '#recommended-partners-section': data.recommendations_html
             };
-    
-            dashboardCard.addEventListener('submit', e => {
-                const form = e.target;
-    
-            if (form.matches('form[action="study-groups.php"]') && form.id !== 'search-form' && !form.classList.contains('no-ajax')) {
-                    e.preventDefault();
-                    const formData = new FormData(form);
-                    const action = formData.get('action');
-    
-                    let promise = null;
-    
-                    if (action === 'send_study_request' || action === 'cancel_study_request') {
-                        let selector = form.closest('.search-results') ? '.search-results' : '#recommendations-section';
-                        promise = fetch('study-groups.php', { method: 'POST', body: formData })
-                            .then(response => response.text())
-                            .then(html => {
-                                const parser = new DOMParser();
-                                const doc = parser.parseFromString(html, 'text/html');
-                                const newSearchSection = doc.querySelector(selector);
-                                if (newSearchSection) {
-                                    document.querySelector(selector).innerHTML = newSearchSection.innerHTML;
-                                }
-                                const newSentRequestsSection = doc.querySelector('#sent-requests-section');
-                                if (newSentRequestsSection) {
-                                    document.getElementById('sent-requests-section').innerHTML = newSentRequestsSection.innerHTML;
-                                }
-                            });
-                    } else if (action === 'accept_request' || action === 'decline_request') {
-                        promise = fetch('study-groups.php', { method: 'POST', body: formData })
-                            .then(response => response.text())
-                            .then(html => {
-                                const parser = new DOMParser();
-                                const doc = parser.parseFromString(html, 'text/html');
-                                const newSection = doc.querySelector('#requests-section');
-                                if (newSection) {
-                                    document.querySelector('#requests-section').innerHTML = newSection.innerHTML;
-                                }
-                            });
-                    } else if (formData.has('quick_match') || formData.has('cancel_match')) {
-                        promise = fetch('study-groups.php', { method: 'POST', body: formData })
-                            .then(response => response.text())
-                            .then(html => {
-                                const parser = new DOMParser();
-                                const doc = parser.parseFromString(html, 'text/html');
-                                const newCard = doc.querySelector('.dashboard-card');
-                                if (newCard) {
-                                    dashboardCard.innerHTML = newCard.innerHTML;
-                                }
-                            });
-                    }
-                    
-                    if (promise) {
-                        preserveScroll(promise);
+
+            for (const [selector, html] of Object.entries(sections)) {
+                const section = document.querySelector(selector);
+
+                if (selector === '#requests-section') {
+                    console.log("--- Checking #requests-section ---");
+                    console.log("Old HTML:", section.innerHTML.trim());
+                    console.log("New HTML:", html.trim());
+                    console.log("HTML is different:", section.innerHTML.trim() !== html.trim());
+                }
+
+                if (section && html !== undefined && section.innerHTML.trim() !== html.trim()) {
+                    section.innerHTML = html;
+                    // If the recommended partners section was just updated, re-attach the event listener
+                    if (selector === '#recommended-partners-section') {
+                        const refreshButton = section.querySelector('#refresh-suggestions-button');
+                        if (refreshButton) {
+                            refreshButton.removeEventListener('click', checkForUpdates); // Prevent duplicates
+                            refreshButton.addEventListener('click', checkForUpdates);
+                        }
                     }
                 }
-            });
-    
-                    // Use event delegation for the refresh button
-    
-                    dashboardCard.addEventListener('click', e => {
-    
-                        if (e.target && e.target.id === 'refresh-suggestions-button') {
-    
-                            const recommendationsSection = document.getElementById('recommendations-section');
-    
-                            if (recommendationsSection) {
-    
-                                // Show a loading indicator (optional)
-    
-                                recommendationsSection.innerHTML = '<div style="text-align: center; padding: 2rem;"><i class="fas fa-spinner fa-spin fa-2x"></i> Loading recommendations...</div>';
-    
-            
-    
-                                // Fetch new content for the recommendations section
-    
-                                fetch('study-groups.php?partial=recommendations&refresh=1&_=' + new Date().getTime()) // Add unique timestamp
-    
-                                    .then(response => response.text())
-    
-                                    .then(html => {
-    
-                                        recommendationsSection.innerHTML = html;
-    
-                                    })
-    
-                                    .catch(error => {
-    
-                                        console.error('Error refreshing recommendations:', error);
-    
-                                        recommendationsSection.innerHTML = '<div class="alert error"><i class="fas fa-exclamation-circle"></i> Failed to load recommendations.</div>';
-    
-                                    });
-    
-                            }
-    
-                        }
-    
-                    });
-    
-            
-    
-                    // Live updates for invitations
-    
-                    const checkForUpdates = async () => {
-                        try {
-                            const response = await fetch(`ajax/check_updates.php?_=${new Date().getTime()}`);
-                            const data = await response.json();
-
-                            // Update received requests
-                            const requestsSection = document.getElementById('requests-section');
-                            if (requestsSection) {
-                                let requestsHtml = '<h2 class="section-title"><i class="fas fa-inbox"></i> Received Study Requests</h2>';
-                                if (data.received_requests && data.received_requests.length > 0) {
-                                    requestsHtml += '<div class="requests-list">';
-                                    data.received_requests.forEach(request => {
-                                        const sender_initials = (request.first_name[0] + request.last_name[0]).toUpperCase();
-                                        requestsHtml += `
-                                            <div class="request-item">
-                                                <div class="user-info">
-                                                    <div class="user-avatar">${sender_initials}</div>
-                                                    <div class="user-details">
-                                                        <h4>${request.first_name} ${request.last_name}</h4>
-                                                        <p>${request.email}</p>
-                                                    </div>
-                                                </div>
-                                                <div class="request-actions">
-                                                    <form action="study-groups.php" method="POST" style="display:inline;"><input type="hidden" name="action" value="accept_request"><input type="hidden" name="request_id" value="${request.request_id}"><button type="submit" class="cta-button primary small">Accept</button></form>
-                                                    <form action="study-groups.php" method="POST" style="display:inline;"><input type="hidden" name="action" value="decline_request"><input type="hidden" name="request_id" value="${request.request_id}"><button type="submit" class="cta-button danger small">Decline</button></form>
-                                                </div>
-                                            </div>
-                                        `;
-                                    });
-                                    requestsHtml += '</div>';
-                                } else {
-                                    requestsHtml += '<div class="alert info"><i class="fas fa-inbox"></i> No pending study requests.</div>';
-                                }
-                                requestsSection.innerHTML = requestsHtml;
-                            }
-                        } catch (error) {
-                            console.error('Error checking for updates:', error);
-                        }
-                    };
-    
-            
-    
-                    setInterval(checkForUpdates, 1000); // Poll every 1 second
-    
-                });
             }
-        });
 
-        const searchInput = document.querySelector('input[name="search_user"]');
-        const suggestionsContainer = document.getElementById('search-suggestions');
-        const searchForm = document.getElementById('search-form');
+        } catch (error) {
+            console.error('Error checking for updates:', error);
+        }
+    };
 
+    // Initial check for updates to populate all sections
+    checkForUpdates();
+
+    // Set up polling to check for updates every 5 seconds
+    setInterval(checkForUpdates, 5000);
+
+    // --- SEARCH SUGGESTIONS ---
+
+    const searchInput = document.querySelector('input[name="search_user"]');
+    const suggestionsContainer = document.getElementById('search-suggestions');
+    const searchForm = document.getElementById('search-form');
+
+    if (searchInput && suggestionsContainer && searchForm) {
         searchInput.addEventListener('input', () => {
             const searchTerm = searchInput.value.trim();
 
-            if (searchTerm.length < 2) {
+            if (searchTerm.length < 1) {
                 suggestionsContainer.style.display = 'none';
                 return;
             }
 
-            // For debugging, make the container visible immediately
             suggestionsContainer.style.display = 'block';
             suggestionsContainer.innerHTML = '<div class="suggestion-item">Loading...</div>';
 
             fetch(`ajax/search_suggestions.php?q=${encodeURIComponent(searchTerm)}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
+                .then(response => response.json())
                 .then(data => {
-                    suggestionsContainer.innerHTML = ''; // Clear "Loading..."
+                    suggestionsContainer.innerHTML = '';
                     if (data.suggestions && data.suggestions.length > 0) {
                         data.suggestions.forEach(user => {
-                            const suggestionItem = document.createElement('div');
-                            suggestionItem.classList.add('suggestion-item');
-                            suggestionItem.textContent = `${user.first_name} ${user.last_name} (${user.email})`;
-                            suggestionItem.addEventListener('click', () => {
+                            const item = document.createElement('div');
+                            item.classList.add('suggestion-item');
+
+                            let avatarHtml = '';
+                            if (user.profile_picture_path) {
+                                avatarHtml = `<img src="${user.profile_picture_path}" alt="${user.first_name}'s avatar" class="user-avatar" style="width: 32px; height: 32px; margin-right: 10px;">`;
+                            } else {
+                                const initials = (user.first_name[0] + (user.last_name ? user.last_name[0] : '')).toUpperCase();
+                                avatarHtml = `<div class="user-avatar" style="width: 32px; height: 32px; font-size: 0.9rem; margin-right: 10px;">${initials}</div>`;
+                            }
+
+                            item.innerHTML = `
+                                <div style="display: flex; align-items: center;">
+                                    ${avatarHtml}
+                                    <span>${user.first_name} ${user.last_name} (${user.email})</span>
+                                </div>
+                            `;
+
+                            item.addEventListener('click', () => {
                                 window.location.href = `user_profile.php?id=${user.id}`;
                             });
-                            suggestionsContainer.appendChild(suggestionItem);
+                            suggestionsContainer.appendChild(item);
                         });
                     } else {
                         suggestionsContainer.innerHTML = '<div class="suggestion-item" style="color: #6c757d;">No users found</div>';
@@ -429,9 +332,11 @@ function openCreateModal() {
                 });
         });
 
-        // Hide suggestions when clicking outside
+        // Hide suggestions when clicking outside the form
         document.addEventListener('click', (e) => {
             if (!searchForm.contains(e.target)) {
                 suggestionsContainer.style.display = 'none';
             }
         });
+    }
+});

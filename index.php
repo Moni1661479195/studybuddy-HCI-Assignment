@@ -1,477 +1,693 @@
 <?php
+
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
 require_once 'session.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Study Buddy - Your Ultimate Learning Companion</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/responsive.css">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Study Buddy</title>
 
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            color: #333;
-        }
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+  <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet" />
+  <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/swiper/swiper-bundle.min.css" />
+  <script src="https://unpkg.com/swiper/swiper-bundle.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet" />
+  
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/modern_auth.css?v=1.0.3"> 
+  <link rel="stylesheet" href="assets/css/modal.css?v=1.0.3">
+  <link rel="stylesheet" href="assets/css/footer.css?v=1.0.1">
 
-        #navbar {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 1rem 2rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+  <style>
 
-        .logo {
-            font-size: 2rem;
-            font-weight: 700;
-            color: white;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
+    body {
+      font-family: 'Inter', sans-serif;
+    }
+    html {
+      scroll-behavior: smooth;
+    }
+    .feature-card {
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+    }
+    .feature-card:hover {
+      transform: translateY(-8px) scale(1.03);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    
+    #stats-section {
+      background-image: linear-gradient(rgba(29, 78, 216, 0.85), rgba(29, 78, 216, 0.85)), 
+                        url('https://images.unsplash.com/photo-1519389950473-47ba0277781c');
+      background-attachment: fixed;
+      background-position: center;
+      background-repeat: no-repeat;
+      background-size: cover;
+    }
+    
+    .faq-answer {
+      transition: max-height 0.3s ease-out;
+    }
 
-        .nav-links a {
-            color: white;
-            text-decoration: none;
-            font-weight: 600;
-            padding: 0.75rem 1.5rem;
-            border-radius: 0.5rem;
-            transition: background 0.3s ease;
-        }
+ 
+    .bubbles-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+    .bubble {
+        position: absolute;
+        bottom: -100px;
+        width: 40px;
+        height: 40px;
+        background: rgba(255, 255, 255, 0.15);
+        border-radius: 50%;
+        animation: rise 15s infinite ease-in;
+    }
+    .bubble:nth-child(1) { width: 40px; height: 40px; left: 10%; animation-duration: 8s; }
+    .bubble:nth-child(2) { width: 20px; height: 20px; left: 20%; animation-duration: 5s; animation-delay: 1s; }
+    .bubble:nth-child(3) { width: 50px; height: 50px; left: 35%; animation-duration: 7s; animation-delay: 2s; }
+    .bubble:nth-child(4) { width: 80px; height: 80px; left: 50%; animation-duration: 11s; animation-delay: 0s; }
+    .bubble:nth-child(5) { width: 35px; height: 35px; left: 55%; animation-duration: 6s; animation-delay: 1s; }
+    .bubble:nth-child(6) { width: 45px; height: 45px; left: 65%; animation-duration: 8s; animation-delay: 3s; }
+    .bubble:nth-child(7) { width: 25px; height: 25px; left: 80%; animation-duration: 6s; animation-delay: 2s; }
 
-        .nav-links a:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
+    @keyframes rise {
+        0% { bottom: -100px; transform: translateX(0); }
+        50% { transform: translateX(100px); }
+        100% { bottom: 100%; transform: translateX(-200px); }
+    }
 
-        .hero-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 4rem 2rem;
-            color: white;
-            
-        }
 
-        .hero-headline {
-            font-size: 3.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            line-height: 1.2;
-            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-        }
 
-        .hero-subheadline {
-            font-size: 1.5rem;
-            margin-bottom: 2.5rem;
-            max-width: 800px;
-            opacity: 0.9;
-        }
+/* --- 1. Add this CSS to fix the modal position --- */
+.modal-overlay {
+    position: fixed; /* Key: Makes it float on top of all content */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* Semi-transparent black background */
+    
+    /* display: none; <-- This is the default, JS will override it */
+    
+    /* We removed align-items: center and added overflow-y: auto */
+    overflow-y: auto;
+    padding: 4rem 0; /* Add some space at the top and bottom */
+    justify-content: center;
+    display: none;
+    z-index: 1000; /* Ensure it's on the very top layer */
+    backdrop-filter: blur(5px); /* Blurs the background (optional) */
+    animation: fadeIn 0.3s ease-out; /* Animates the black background fade-in */
+}
 
-        .hero-ctas {
-            display: flex;
-            gap: 1.5rem;
-            min-height: 60px;
-        }
+/* This is the container for the form loaded by JS */
+.modal-content {
+    position: relative;
+    width: 90%; /* On small screens, use 90% width */
+    max-width: 460px; /* Max width of the modal box */
+    animation: scaleUp 0.3s ease-out; /* Animates the white card scaling up */
+}
 
-        .cta-button {
-            display: inline-block;
-            padding: 1.2rem 2.5rem;
-            border-radius: 0.75rem;
-            font-size: 1.1rem;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
+/* When modal is active, prevent the background page from scrolling */
+body.modal-active {
+    overflow: hidden;
+}
 
-        .cta-button.primary {
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            border: none;
-        }
+/* Styling for the modal close button */
+.modal-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 1.8rem; /* Make it larger */
+    color: #6c757d; /* A subtle dark grey */
+    cursor: pointer;
+    padding: 5px;
+    line-height: 1;
+    z-index: 10; /* Ensure it's above other content */
+    transition: color 0.2s ease;
+}
 
-        .cta-button.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
-        }
+.modal-close-btn:hover {
+    color: #343a40; /* Darker on hover */
+}
 
-        .cta-button.secondary {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 2px solid rgba(255, 255, 255, 0.5);
-        }
 
-        .cta-button.secondary:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-            box-shadow: 0 10px 30px rgba(255, 255, 255, 0.2);
-        }
+/* --- 1. Add these new @keyframes rules (at the end of your <style> block) --- */
+@keyframes fadeIn {
+    /* Animation for the black background */
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
 
-        .features-section {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(15px);
-            padding: 4rem 2rem;
-            text-align: center;
-            color: #333;
-        }
+@keyframes scaleUp {
+    /* Animation for the white login card */
+    from {
+        opacity: 0;
+        transform: scale(0.95); /* Start slightly smaller and transparent */
+    }
+    to {
+        opacity: 1;
+        transform: scale(1); /* End at full size and visible */
+    }
+}
 
-        .section-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-            color: #1f2937;
-        }
-
-        .section-subtitle {
-            font-size: 1.2rem;
-            color: #4b5563;
-            margin-bottom: 3rem;
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 2rem;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .feature-item {
-            background: white;
-            padding: 2.5rem;
-            border-radius: 1rem;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            border: 1px solid #e5e7eb;
-        }
-
-        .feature-item:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
-        }
-
-        .feature-item i {
-            font-size: 3rem;
-            color: #667eea;
-            margin-bottom: 1.5rem;
-        }
-
-        .feature-item h3 {
-            font-size: 1.5rem;
-            font-weight: 600;
-            color: #1f2937;
-            margin-bottom: 0.75rem;
-        }
-
-        .feature-item p {
-            color: #4b5563;
-            line-height: 1.6;
-        }
-
-        .testimonial-section {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            padding: 5rem 2rem;
-            text-align: center;
-            color: white;
-        }
-
-        .testimonial-quote {
-            font-size: 1.8rem;
-            font-style: italic;
-            max-width: 900px;
-            margin: 0 auto 2rem auto;
-            line-height: 1.5;
-            opacity: 0.95;
-        }
-
-        .testimonial-author {
-            font-size: 1.2rem;
-            font-weight: 600;
-            opacity: 0.8;
-        }
-
-        .final-cta-section {
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(15px);
-            padding: 4rem 2rem;
-            text-align: center;
-            color: #333;
-        }
-
-        .final-cta-title {
-            font-size: 2.2rem;
-            font-weight: 700;
-            color: #1f2937;
-            margin-bottom: 2rem;
-        }
-
-        .nav-links .cta-button {
-            display: inline-block;
-            padding: 0.75rem 1.5rem; /* Adjusted for navbar */
-            border-radius: 0.5rem;
-            font-size: 1rem; /* Adjusted for navbar */
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-            z-index: 1;
-        }
-
-        .nav-links .cta-button.primary {
-            background: linear-gradient(45deg, #10b981, #059669);
-            color: white;
-            border: none;
-        }
-
-        .nav-links .cta-button.primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
-        }
-
-        .nav-links .active {
-            background: linear-gradient(45deg, #ef4444, #dc2626) !important; /* Red color for active button */
-            box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
-        }
-
-        .footer {
-            background: rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-            color: white;
-            text-align: center;
-            padding: 2rem;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .footer p {
-            margin-bottom: 0.5rem;
-            opacity: 0.8;
-        }
-
-        .footer-links a {
-            color: white;
-            text-decoration: none;
-            margin: 0 0.75rem;
-            opacity: 1;
-            transition: opacity 0.3s ease;
-        }
-
-        .footer-links a:hover {
-            opacity: 1;
-        }
-
-        @media (max-width: 768px) {
-            .hero-headline {
-                font-size: 2.5rem;
-            }
-            .hero-subheadline {
-                font-size: 1.2rem;
-            }
-            .hero-ctas {
-                flex-direction: column;
-                gap: 1rem;
-            }
-            .cta-button {
-                padding: 1rem 2rem;
-                font-size: 1rem;
-            }
-            .section-title {
-                font-size: 2rem;
-            }
-            .section-subtitle {
-                font-size: 1rem;
-            }
-            .feature-item {
-                padding: 2rem;
-            }
-            .feature-item h3 {
-                font-size: 1.3rem;
-            }
-            .testimonial-quote {
-                font-size: 1.4rem;
-            }
-            .final-cta-title {
-                font-size: 1.8rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            #navbar {
-                padding: 1rem;
-            }
-            .logo {
-                font-size: 1.5rem;
-            }
-            .hero-section {
-                padding: 3rem 1rem;
-            }
-            .hero-headline {
-                font-size: 2rem;
-            }
-            .hero-subheadline {
-                font-size: 1rem;
-            }
-            .features-section, .testimonial-section, .final-cta-section {
-                padding: 3rem 1rem;
-            }
-            .section-title {
-                font-size: 1.8rem;
-            }
-            .section-subtitle {
-                font-size: 0.9rem;
-            }
-            .feature-item {
-                padding: 1.5rem;
-            }
-            .feature-item i {
-                font-size: 2.5rem;
-            }
-            .feature-item h3 {
-                font-size: 1.2rem;
-            }
-            .testimonial-quote {
-                font-size: 1.2rem;
-            }
-            .final-cta-title {
-                font-size: 1.5rem;
-            }
-        }
-    </style>
-    <link rel="stylesheet" href="assets/css/responsive.css">
+  </style>
 </head>
-<body>
-    <nav id="navbar">
-        <?php $currentPage = basename($_SERVER['PHP_SELF']); ?>
-        <a href="index.php" class="logo">
-            <i class="fas fa-graduation-cap"></i>
-            Study Buddy
-        </a>
+<body class="bg-gray-50 text-gray-800">
 
-        <!-- mobile hamburger -->
-        <button id="nav-toggle" class="nav-toggle" aria-label="Toggle menu">
-            <i class="fas fa-bars"></i>
-        </button>
+<div id="main-content">
+    <?php include 'header.php'; ?>
 
-        <div class="nav-links">
-            <?php if (isset($_SESSION['user_id'])): ?>
-                <a href="dashboard.php" class="cta-button primary <?php echo ($currentPage == 'dashboard.php') ? 'active' : ''; ?>">Dashboard</a>
-                <a href="logout.php" class="cta-button primary">Logout</a>
-            <?php else: ?>
-                <a href="index.php" class="cta-button primary <?php echo ($currentPage == 'index.php') ? 'active' : ''; ?>">Home</a>
-                <a href="login.php" class="cta-button primary <?php echo ($currentPage == 'login.php') ? 'active' : ''; ?>">Sign In</a>
-                <a href="signup.php" class="cta-button primary <?php echo ($currentPage == 'signup.php') ? 'active' : ''; ?>">Sign Up</a>
-            <?php endif; ?>
+    <section class="relative h-[45vh] flex items-center justify-center text-center bg-blue-700 text-white mt-16">
+        <video autoplay muted loop playsinline class="absolute inset-0 w-full h-full object-cover brightness-50">
+          <source src="https://cdn.pixabay.com/vimeo/331381734/education-22437.mp4?width=1280&hash=0f17bb8b7b6928ab281c5d4b01f567d73388f6cd" type="video/mp4">
+        </video>
+
+        <div class="bubbles-container">
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
+            <div class="bubble"></div>
         </div>
-    </nav>
 
-    <div class="hero-section">
-        <h1 class="hero-headline">Study Buddy: Your Ultimate Learning Companion</h1>
-        <p class="hero-subheadline">Master your subjects with personalized tools, collaborative study groups, and expert resources.</p>
-    <?php if (!isset($_SESSION['user_id'])): ?>
-    <div class="hero-ctas">
-        <a href="signup.php" class="cta-button primary">Get Started Free</a>
-        <a href="login.php" class="cta-button secondary">Sign In</a>
-    </div>
-<?php endif; ?>
+        <div class="relative z-10 px-6">
+          <h1 class="text-4xl sm:text-5xl font-bold mb-4" data-aos="fade-up">Your Personalized Learning Companion</h1>
+          <span id="typing-text" class="text-lg sm:text-xl font-medium block mb-6 text-blue-200"></span>
+          <div class="hero-ctas">
+                <?php if (!isset($_SESSION['user_id'])): ?>
+                  <a href="#features" class="bg-white text-blue-700 font-semibold px-6 py-3 rounded-full hover:bg-blue-100 transition">Explore Features</a>
+
+                <?php else: ?>
+                     <a href="dashboard.php" class="bg-white text-blue-700 font-semibold px-6 py-3 rounded-full hover:bg-blue-100 transition">Go to Dashboard</a>
+                <?php endif; ?>
+            </div>
+        </div>
+    </section>
+
+    <section id="features" class="text-center py-20 px-4 bg-white">
+        <h2 class="text-3xl font-bold mb-6 text-gray-800" data-aos="fade-up">Why Choose Study Buddy?</h2>
+        <p class="text-gray-600 mb-12 max-w-xl mx-auto" data-aos="fade-up" data-aos-delay="200">
+          We provide everything you need to succeed in your academic journey, all in one place.
+        </p>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div class="bg-gradient-to-br from-blue-50 to-purple-100 rounded-2xl shadow feature-card overflow-hidden text-left" data-aos="zoom-in">
+            <div class="relative">
+              <img src="https://images.unsplash.com/photo-1543269865-cbf427effbad?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Study Planning" class="w-full h-48 object-cover">
+              <div class="absolute -bottom-5 -right-5 w-20 h-20 bg-blue-200 rounded-full opacity-50"></div>
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-2 text-blue-800">Personalized Study Plans</h3>
+              <p class="text-gray-700">Create custom study schedules tailored to your goals and learning style.</p>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-green-50 to-blue-100 rounded-2xl shadow feature-card overflow-hidden text-left" data-aos="zoom-in" data-aos-delay="200">
+            <div class="relative">
+              <img src="https://images.unsplash.com/photo-1516321497487-e288fb19713f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Interactive Quizzes" class="w-full h-48 object-cover">
+              <div class="absolute -bottom-5 -right-5 w-20 h-20 bg-green-200 rounded-full opacity-50"></div>
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-2 text-green-800">Interactive Quizzes</h3>
+              <p class="text-gray-700">Test your knowledge and reinforce learning with engaging, custom-built quizzes.</p>
+            </div>
+          </div>
+          <div class="bg-gradient-to-br from-purple-50 to-pink-100 rounded-2xl shadow feature-card overflow-hidden text-left" data-aos="zoom-in" data-aos-delay="400">
+            <div class="relative">
+              <img src="https://images.unsplash.com/photo-1522202176988-66273c2fd55f?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Collaborative Groups" class="w-full h-48 object-cover">
+              <div class="absolute -bottom-5 -right-5 w-20 h-20 bg-purple-200 rounded-full opacity-50"></div>
+            </div>
+            <div class="p-6">
+              <h3 class="text-xl font-semibold mb-2 text-purple-800">Collaborative Groups</h3>
+              <p class="text-gray-700">Connect with peers, share knowledge, and learn together effectively in study groups.</p>
+            </div>
+          </div>
+        </div>
+    </section>
+
+    <section id="app-features" class="py-20 bg-gray-50">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-3xl font-bold text-center mb-12 text-gray-800" data-aos="fade-up">Powerful Tools, Simple Interface</h2>
+          <div class="flex flex-col md:flex-row items-center gap-12 mb-16" data-aos="fade-right">
+            <div class="md:w-1/2">
+              <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Progress Analytics Dashboard" class="rounded-lg shadow-xl w-full">
+            </div>
+            <div class="md:w-1/2">
+              <span class="text-blue-600 font-semibold">ANALYTICS</span>
+              <h3 class="text-2xl font-bold text-gray-800 mb-4 mt-2">Track Your Progress Visually</h3>
+              <p class="text-gray-600 mb-4">
+                Visualize your learning journey with our intuitive analytics dashboard. See your quiz scores, study time, and subject mastery all in one place.
+              </p>
+              <ul class="space-y-2 text-gray-600">
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Detailed charts for scores and time
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Identify strengths and weaknesses
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Set and track weekly goals
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="flex flex-col md:flex-row-reverse items-center gap-12" data-aos="fade-left">
+            <div class="md:w-1/2">
+              <img src="https://images.unsplash.com/photo-1614332287897-cdc485fa562d?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Smart Notifications on Mobile" class="rounded-lg shadow-xl w-full">
+            </div>
+            <div class="md:w-1/2">
+              <span class="text-purple-600 font-semibold">STAY ON TRACK</span>
+              <h3 class="text-2xl font-bold text-gray-800 mb-4 mt-2">Smart Notifications</h3>
+              <p class="text-gray-600 mb-4">
+                Never miss a deadline or study session. Our smart reminders keep you accountable and motivated, delivering the right info at the right time.
+              </p>
+              <ul class="space-y-2 text-gray-600">
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Upcoming quiz and assignment alerts
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Reminders for scheduled study blocks
+                </li>
+                <li class="flex items-center">
+                  <svg class="w-5 h-5 text-green-500 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                  Motivational quotes and study tips
+                </li>
+              </ul>
+            </div>
+          </div>
+        </div>
+    </section>
+
+    <section id="stats-section" class="py-20 text-white text-center">
+        <div class="grid sm:grid-cols-3 gap-10 max-w-5xl mx-auto">
+          <div>
+            <h3 class="text-4xl font-bold" data-count="10000">0</h3>
+            <p>Active Students</p>
+          </div>
+          <div>
+            <h3 class="text-4xl font-bold" data-count="500">0</h3>
+            <p>Universities</p>
+          </div>
+          <div>
+            <h3 class="text-4xl font-bold" data-count="95">0</h3>
+            <p>Satisfaction Rate (%)</p>
+          </div>
+        </div>
+    </section>
+
+    <section class="bg-gray-100 py-20">
+        <h2 class="text-3xl font-bold text-center mb-10 text-gray-800" data-aos="fade-up">What Students Say</h2>
+        <div class="mx-auto">
+            <div class="swiper mySwiper">
+              <div class="swiper-wrapper">
+                <div class="swiper-slide bg-white p-8 rounded-2xl shadow-md text-center">
+              <img src="https://images.unsplash.com/photo-1522071820081-009f0129c71c?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="Headshot of Aisha" class="w-24 h-24 rounded-full mx-auto mb-5 object-cover shadow-md" />
+              <p class="italic text-gray-700">"Study Buddy helped me manage my time and study more efficiently!"</p>
+              <h4 class="font-semibold mt-4 text-blue-700">– Aisha, Biotechnology Student</h4>
+            </div>
+            <div class="swiper-slide bg-white p-8 rounded-2xl shadow-md text-center">
+              <img src="https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="Headshot of Amir" class="w-24 h-24 rounded-full mx-auto mb-5 object-cover shadow-md" />
+              <p class="italic text-gray-700">"The quizzes are so engaging — it makes learning actually fun!"</p>
+              <h4 class="font-semibold mt-4 text-blue-700">– Amir, Computer Science Student</h4>
+            </div>
+            <div class="swiper-slide bg-white p-8 rounded-2xl shadow-md text-center">
+              <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=400" alt="Headshot of Mei Ling" class="w-24 h-24 rounded-full mx-auto mb-5 object-cover shadow-md" />
+              <p class="italic text-gray-700">"I met new friends through the group feature — it’s awesome!"</p>
+              <h4 class="font-semibold mt-4 text-blue-700">– Mei Ling, Psychology Student</h4>
+            </div>
+          </div>
+          <div class="swiper-pagination mt-6"></div>
+        </div>
+    </section>
+
+    <section id="gallery" class="py-20 bg-white">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 class="text-3xl font-bold text-center mb-12 text-gray-800" data-aos="fade-up">Find Your Focus</h2>
+          <p class="text-gray-600 mb-12 max-w-xl mx-auto text-center" data-aos="fade-up" data-aos-delay="100">
+            Study Buddy works wherever you do. See how students learn in different environments.
+          </p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="overflow-hidden rounded-lg shadow-lg" data-aos="zoom-in" data-aos-delay="0">
+              <img src="https://images.unsplash.com/photo-1507842217343-583bb7270b66?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Library" class="w-full h-80 object-cover transition-transform duration-500 ease-in-out hover:scale-110">
+            </div>
+            <div class="overflow-hidden rounded-lg shadow-lg" data-aos="zoom-in" data-aos-delay="150">
+              <img src="https://images.unsplash.com/photo-1523240795612-9a054b0db644?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Collaborative Space" class="w-full h-80 object-cover transition-transform duration-500 ease-in-out hover:scale-110">
+            </div>
+            <div class="overflow-hidden rounded-lg shadow-lg" data-aos="zoom-in" data-aos-delay="300">
+              <img src="https://images.unsplash.com/photo-1517842645767-c639042777db?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Home Desk" class="w-full h-80 object-cover transition-transform duration-500 ease-in-out hover:scale-110">
+            </div>
+            <div class="overflow-hidden rounded-lg shadow-lg" data-aos="zoom-in" data-aos-delay="450">
+              <img src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&q=80&w=1080" alt="Cafe Study" class="w-full h-80 object-cover transition-transform duration-500 ease-in-out hover:scale-110">
+            </div>
+          </div>
+        </div>
+    </section>
+
+    <section id="faq" class="py-20 bg-gray-50"> <div class="max-w-3xl mx-auto px-4">
+        <h2 class="text-3xl font-bold text-center mb-10 text-gray-800" data-aos="fade-up">Frequently Asked Questions</h2>
+        <div class="space-y-4" data-aos="fade-up" data-aos-delay="200">
+          <div class="bg-white rounded-lg shadow-sm">
+            <button class="faq-toggle w-full flex justify-between items-center text-left p-5 font-semibold text-gray-700 focus:outline-none">
+              <span>How does the smart searching algorithm work?</span>
+              <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600">
+              <p>Our smart search uses AI to understand your queries. It doesn't just look for keywords; it understands the concept you're looking for. This allows it to connect you with the most relevant study guides, quiz questions, and group discussions from across the platform, helping you find what you need instantly.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm">
+            <button class="faq-toggle w-full flex justify-between items-center text-left p-5 font-semibold text-gray-700 focus:outline-none">
+              <span>Can I create quizzes for my study group?</span>
+              <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600">
+              <p>Yes! You can create custom quizzes and share them directly with your collaborative study groups. You can also access quizzes made by other students in your courses.</p>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm">
+            <button class="faq-toggle w-full flex justify-between items-center text-left p-5 font-semibold text-gray-700 focus:outline-none">
+              <span>Is Study Buddy free to use?</span>
+              <svg class="w-5 h-5 transition-transform duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+            </button>
+            <div class="faq-answer hidden p-5 pt-0 text-gray-600">
+              <p>Yes! Study Buddy is completely free and open-source. All features, including study plans, collaborative groups, and unlimited quizzes, are available to everyone.</p>
+            </div>
+          </div>
+          </div>
+      </div>
+    </section>
+
+    <section id="demo-video" class="py-20 bg-gray-100">
+        <div class="max-w-4xl mx-auto px-4 text-center">
+          <h2 class="text-3xl font-bold mb-6 text-gray-800" data-aos="fade-up">See Study Buddy in Action</h2>
+          <p class="text-gray-600 mb-8 max-w-xl mx-auto" data-aos="fade-up" data-aos-delay="100">
+            Watch this short demo to see how you can organize your semester,
+            ace your exams, and collaborate with peers.
+          </p>
+          <div class="aspect-w-16 aspect-h-9 rounded-lg shadow-xl overflow-hidden" data-aos="zoom-in" data-aos-delay="200">
+            <iframe 
+              class="w-full h-full"
+              src="https://www.youtube.com/embed/i-h-Sjpx-2E" title="YouTube video player" 
+              frameborder="0" 
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+              allowfullscreen>
+            </iframe>
+          </div>
+        </div>
+    </section>
+
+    <?php include 'footer.php'; ?>
 </div>
 
-    <div class="features-section">
-        <h2 class="section-title">Why Choose Study Buddy?</h2>
-        <p class="section-subtitle">We provide everything you need to succeed in your academic journey.</p>
-        <div class="features-grid">
-            <div class="feature-item">
-                <i class="fas fa-calendar-alt"></i>
-                <h3>Personalized Study Plans</h3>
-                <p>Create custom study schedules tailored to your goals and learning style.</p>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-question-circle"></i>
-                <h3>Interactive Quizzes & Flashcards</h3>
-                <p>Test your knowledge and reinforce learning with engaging tools.</p>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-users"></i>
-                <h3>Collaborative Study Groups</h3>
-                <p>Connect with peers, share knowledge, and learn together effectively.</p>
-            </div>
-            <div class="feature-item">
-                <i class="fas fa-chart-line"></i>
-                <h3>Progress Tracking & Analytics</h3>
-                <p>Monitor your performance and identify areas for improvement.</p>
-            </div>
+<div id="universal-modal" class="modal-overlay">
+    <div class="modal-content" id="modal-content-container">
         </div>
-    </div>
+</div>
 
-    <div class="testimonial-section">
-        <p class="testimonial-quote">"Study Buddy transformed my grades! The personalized plans and interactive quizzes made learning enjoyable and effective."</p>
-        <p class="testimonial-author">- A Happy Student</p>
-    </div>
+<script>
+    
+    window.addEventListener("scroll", () => {
+      if (window.scrollY > 50) {
+        navbar.classList.add("shadow-lg");
+      } else {
+        navbar.classList.remove("shadow-lg");
+      }
+    });
 
- <?php if (!isset($_SESSION['user_id'])): ?>
-    <div class="final-cta-section">
-        <h2 class="final-cta-title">Ready to Boost Your Grades?</h2>
-        <a href="signup.php" class="cta-button primary">Join Study Buddy Today!</a>
-    </div>
-<?php endif; ?>
+    // Mobile menu toggle
+    const menuBtn = document.getElementById("menu-btn");
+    const mobileMenu = document.getElementById("mobile-menu");
+    if (menuBtn && mobileMenu) {
+        menuBtn.addEventListener("click", () => mobileMenu.classList.toggle("hidden"));
+    }
 
-    <footer class="footer">
-        <p>&copy; <?php echo date("Y"); ?> Study Buddy. All rights reserved.</p>
-        <div class="footer-links">
-            <a href="index.php">Home</a>
-            <a href="terms.php">Terms of Service</a>
-            <a href="privacy.php">Privacy Policy</a>
-        </div>
-    </footer>
+    // Typing animation
+    const textArray = ["Plan smarter.", "Learn faster.", "Collaborate better."];
+    let index = 0;
+    const typingElement = document.getElementById("typing-text");
+    function typeText() {
+      const text = textArray[index];
+      let i = 0;
+      typingElement.textContent = "";
+      const interval = setInterval(() => {
+        typingElement.textContent += text[i];
+        i++;
+        if (i === text.length) {
+          clearInterval(interval);
+          setTimeout(() => {
+            index = (index + 1) % textArray.length;
+            typeText();
+          }, 2000);
+        }
+      }, 100);
+    }
+    if (typingElement) {
+        typeText();
+    }
 
-    <script>
-        // Navbar hide/show on scroll
-        let lastScrollY = window.scrollY;
-        const navbar = document.getElementById('navbar');
+    // Animated counters
+    document.querySelectorAll("[data-count]").forEach(el => {
+      const update = () => {
+        const target = +el.getAttribute("data-count");
+        const current = +el.innerText;
+        const increment = target / 80;
+        if (current < target) {
+          el.innerText = Math.ceil(current + increment);
+          requestAnimationFrame(update);
+        } else el.innerText = target;
+      };
+      update();
+    });
 
-        window.addEventListener('scroll', () => {
-            if (navbar) {
-                if (window.scrollY < lastScrollY) {
-                    // Scrolling up: show navbar immediately
-                    navbar.style.transform = 'translateY(0)';
-                } else if (window.scrollY > lastScrollY && window.scrollY > 50) {
-                    // Scrolling down and past initial threshold: hide navbar
-                    navbar.style.transform = 'translateY(-100%)';
-                }
-                // If scrolling down but still within the top 50px, navbar remains visible (default state)
-                lastScrollY = window.scrollY;
-            }
+    // Swiper carousel
+    new Swiper(".mySwiper", {
+      loop: true,
+      autoplay: {
+        delay: 3000,
+        disableOnInteraction: false,
+      },
+      slidesPerView: 1,
+      pagination: {
+        el: ".swiper-pagination",
+        clickable: true
+      },
+    });
+    new Swiper(".success-swiper", { 
+      loop: true,
+      autoplay: {
+        delay: 4000,
+        disableOnInteraction: false,
+      },
+      pagination: {
+        el: ".success-pagination",
+        clickable: true,
+      },
+    });
+
+    // AOS animations
+    AOS.init({ duration: 1000, once: true });
+
+    
+    // --- For FAQ Accordion (来自 fakemainpage.php) ---
+    document.querySelectorAll('.faq-toggle').forEach(button => {
+      button.addEventListener('click', () => {
+        const answer = button.nextElementSibling;
+        const allAnswers = document.querySelectorAll('.faq-answer');
+        
+        allAnswers.forEach(ans => {
+          if (ans !== answer && !ans.classList.contains('hidden')) {
+            ans.classList.add('hidden');
+            ans.previousElementSibling.querySelector('svg').classList.remove('rotate-180');
+          }
         });
-    </script>
-    <script src="assets/js/responsive.js" defer></script>
+
+        answer.classList.toggle('hidden');
+        const icon = button.querySelector('svg');
+        icon.classList.toggle('rotate-180');
+      });
+    });
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const body = document.body;
+        const modalContainer = document.getElementById('universal-modal');
+        const modalContentContainer = document.getElementById('modal-content-container');
+
+        const openModal = async (url) => {
+            if (!modalContainer || !modalContentContainer) return;
+            try {
+                const response = await fetch(url);
+                if (!response.ok) throw new Error('Failed to load content.');
+                const html = await response.text();
+                modalContentContainer.innerHTML = html;
+                body.classList.add('modal-active');
+                modalContainer.style.display = 'flex';
+                initializeModalScripts(modalContentContainer);
+            } catch (error) {
+                console.error('Error loading modal content:', error);
+                modalContentContainer.innerHTML = '<div class="auth-card"><p>Error loading content. Please try again.</p></div>';
+            }
+        };
+
+        const closeModal = (callback) => {
+            if (!modalContainer) return;
+            body.classList.remove('modal-active');
+            setTimeout(() => {
+                modalContainer.style.display = 'none';
+                modalContentContainer.innerHTML = ''; // Clear content
+                if (typeof callback === 'function') {
+                    callback();
+                }
+            }, 400);
+        };
+
+        const initializeModalScripts = (container) => {
+            container.querySelector('.modal-close-btn')?.addEventListener('click', () => closeModal());
+            container.querySelector('.modal-switch')?.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetUrl = e.target.dataset.target;
+                if (targetUrl) {
+                    closeModal(() => openModal(targetUrl));
+                }
+            });
+
+            const loginForm = container.querySelector('#modalLoginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(loginForm);
+                    // 确保 action URL 指向 api 文件夹
+                    const response = await fetch('api/ajax_login.php', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (result.success) {
+                        window.location.href = result.redirect || 'dashboard.php';
+                    } else {
+                        showMessage('login-modal', result.message);
+                    }
+                });
+            }
+
+            const signupForm = container.querySelector('#modalSignupForm');
+            if (signupForm) {
+                signupForm.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const formData = new FormData(signupForm);
+                    const response = await fetch('api/ajax_signup.php', { method: 'POST', body: formData });
+                    const result = await response.json();
+                    if (result.success) {
+                        showMessage('signup-modal', result.message, true);
+                        // Check for a redirect URL in the response for auto-login
+                        if (result.redirect) {
+                            setTimeout(() => {
+                                window.location.href = result.redirect;
+                            }, 1000); // Wait 1 second to show success message before redirecting
+                        } else {
+                            // Fallback to old behavior if no redirect URL is provided
+                            setTimeout(() => {
+                                closeModal(() => {
+                                    openModal('ajax/login_form.php');
+                                });
+                            }, 1000);
+                        }
+                    } else {
+                        showMessage('signup-modal', result.message);
+                    }
+                });
+            }
+
+            const modalGetCodeBtn = container.querySelector('#modal-get-code-btn');
+            if (modalGetCodeBtn) {
+                modalGetCodeBtn.addEventListener('click', async function() {
+                    const emailField = container.querySelector('#signup-email');
+                    if (!emailField || !emailField.value || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
+                        showMessage('signup-modal', 'Please enter a valid email address.');
+                        return;
+                    }
+                    this.disabled = true;
+                    this.textContent = 'Sending...';
+                    try {
+                        const response = await fetch('api/send_verification_code.php', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email: emailField.value })
+                        });
+                        const data = await response.json();
+                        if (data.success) {
+                            showMessage('signup-modal', 'Verification code sent! Please check your email.', true);
+                            let countdown = 60;
+                            this.textContent = `Wait ${countdown}s`;
+                            const interval = setInterval(() => {
+                                countdown--;
+                                this.textContent = `Wait ${countdown}s`;
+                                if (countdown <= 0) {
+                                    clearInterval(interval);
+                                    this.textContent = 'Get Code';
+                                    this.disabled = false;
+                                }
+                            }, 1000);
+                        } else {
+                            showMessage('signup-modal', data.message || 'Failed to send code.');
+                            this.disabled = false;
+                            this.textContent = 'Get Code';
+                        }
+                    } catch (error) {
+                        showMessage('signup-modal', 'An error occurred. Please try again.');
+                        this.disabled = false;
+                        this.textContent = 'Get Code';
+                    }
+                });
+            }
+        };
+
+        const showMessage = (modalId, message, isSuccess = false) => {
+            const messageDiv = modalContentContainer.querySelector(`#${modalId}-message`);
+            if (messageDiv) {
+                messageDiv.textContent = message;
+                messageDiv.className = isSuccess ? 'success-message' : 'error-message';
+                messageDiv.style.display = 'flex';
+            }
+        };
+
+        // --- 绑定 Modal 按钮 ---
+        document.getElementById('nav-signin-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/login_form.php'); });
+        document.getElementById('hero-signin-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/login_form.php'); });
+        document.getElementById('nav-signup-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/signup_form.php'); });
+        document.getElementById('hero-signup-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/signup_form.php'); });
+        document.getElementById('mobile-signin-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/login_form.php'); });
+        document.getElementById('mobile-signup-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/signup_form.php'); });
+        
+        document.getElementById('mobile-signin-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/login_form.php'); });
+        document.getElementById('mobile-signup-btn')?.addEventListener('click', (e) => { e.preventDefault(); openModal('ajax/signup_form.php'); });
+
+
+        modalContainer?.addEventListener('click', (e) => {
+            if (e.target === modalContainer) closeModal();
+        });
+        
+      
+    });
+</script>
+
 </body>
 </html>

@@ -4,6 +4,7 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 require_once __DIR__ . '/../lib/db.php';
 require_once '../session.php';
+require_once __DIR__ . '/../includes/notifications.php';
 
 header('Content-Type: application/json');
 
@@ -25,13 +26,13 @@ try {
     $db = get_db();
 
     // Get sender_id from request_id and ensure current user is the receiver
-    $stmt_get_sender = $db->prepare("SELECT sender_id FROM study_requests WHERE request_id = ? AND receiver_id = ? AND status = 'pending'");
+    $stmt_get_sender = $db->prepare("SELECT sender_id FROM study_requests WHERE id = ? AND receiver_id = ? AND status = 'pending'");
     $stmt_get_sender->execute([$request_id, $user_id]);
     $sender_data = $stmt_get_sender->fetch(PDO::FETCH_ASSOC);
 
     if (!$sender_data) {
         // Check if the request exists but is not pending
-        $stmt_check_status = $db->prepare("SELECT status FROM study_requests WHERE request_id = ? AND receiver_id = ?");
+        $stmt_check_status = $db->prepare("SELECT status FROM study_requests WHERE id = ? AND receiver_id = ?");
         $stmt_check_status->execute([$request_id, $user_id]);
         $current_status = $stmt_check_status->fetchColumn();
 
@@ -48,23 +49,36 @@ try {
     }
     $sender_id = (int)$sender_data['sender_id'];
 
+    $db->beginTransaction();
+
     // Update study request status to accepted
-    $stmt_update_request = $db->prepare("UPDATE study_requests SET status = 'accepted', responded_at = NOW() WHERE request_id = ?");
+    $stmt_update_request = $db->prepare("UPDATE study_requests SET status = 'accepted', responded_at = NOW() WHERE id = ?");
     $stmt_update_request->execute([$request_id]);
 
-    // Create a study session for the accepted request
-    $metadata = json_encode(['group' => [$user_id, $sender_id]]);
-    $create_session = $db->prepare("INSERT INTO study_sessions (user_id, is_group, metadata, started_at) VALUES (?, 1, ?, NOW())");
-    $create_session->execute([$user_id, $metadata]);
+    $receiver_id = $user_id; // The current user is the receiver in this context
+
+    // Clean up other pending requests between these two users to prevent duplicates
+    $stmt_cleanup = $db->prepare("DELETE FROM study_requests WHERE status = 'pending' AND ((sender_id = ? AND receiver_id = ?) OR (sender_id = ? AND receiver_id = ?))");
+    $stmt_cleanup->execute([$sender_id, $receiver_id, $receiver_id, $sender_id]);
+
+    $user1 = min($sender_id, $receiver_id);
+    $user2 = max($sender_id, $receiver_id);
+
+    // Add to study_partners table
+    $partner_stmt = $db->prepare("\n        INSERT INTO study_partners (user1_id, user2_id, is_active, last_activity) \n        VALUES (?, ?, 1, NOW())\n        ON DUPLICATE KEY UPDATE is_active = 1, last_activity = NOW()\n    ");
+    $partner_stmt->execute([$user1, $user2]);
 
     // Create a notification for the sender
-    $receiver_name_stmt = $db->prepare("SELECT first_name, last_name FROM users WHERE id = ?");
-    $receiver_name_stmt->execute([$user_id]);
-    $receiver_name = $receiver_name_stmt->fetch(PDO::FETCH_ASSOC);
-    $message = htmlspecialchars($receiver_name['first_name'] . ' ' . $receiver_name['last_name']) . " accepted your study request.";
-    
-    $stmt_notification = $db->prepare("INSERT INTO notifications (user_id, message, created_at) VALUES (?, ?, NOW())");
-    $stmt_notification->execute([$sender_id, $message]);
+    $receiver_name = $_SESSION['username'] ?? 'Someone';
+    $message = htmlspecialchars($receiver_name) . " accepted your study request.";
+    $link = 'user_profile.php?id=' . $receiver_id;
+    create_notification($sender_id, 'study_request_accepted', $message, $link);
+
+    // Task: Social Butterfly
+    require_once __DIR__ . '/../includes/TaskLogic.php';
+    updateTaskProgress($db, $user_id, 'weekly_social');
+
+    $db->commit();
 
     echo json_encode(['success' => true, 'message' => 'Study request accepted successfully!']);
 } catch (Exception $e) {
